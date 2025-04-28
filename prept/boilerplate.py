@@ -6,6 +6,7 @@ from typing import Any, Iterator
 from typing_extensions import Self
 from packaging.version import Version, InvalidVersion
 from prept.errors import InvalidConfig, ConfigNotFound, BoilerplateNotFound
+from prept import utils
 
 import re
 import os
@@ -44,6 +45,12 @@ class BoilerplateInfo:
     def _get_generated_files(self) -> Iterator[pathlib.Path]:
         ignore_paths = set(self._ignore_paths).union(DEFAULT_IGNORED_PATHS)
         spec = pathspec.PathSpec.from_lines("gitwildmatch", ignore_paths)
+
+        for file in spec.match_tree(self.path, negate=True):
+            yield pathlib.Path(self.path / file).relative_to(self.path)
+
+    def _get_installation_files(self) -> Iterator[pathlib.Path]:
+        spec = pathspec.PathSpec.from_lines("gitwildmatch", [])
 
         for file in spec.match_tree(self.path, negate=True):
             yield pathlib.Path(self.path / file).relative_to(self.path)
@@ -162,6 +169,26 @@ class BoilerplateInfo:
             version=data.get('version'),
             ignore_paths=data.get('ignore_paths'),
         )
+    
+    @classmethod
+    def from_installation(cls, name: str) -> Self:
+        """Loads boilerplate from the installation.
+
+        Raises :class:`ConfigNotFound` or :class:`InvalidConfig` if boilerplate
+        configuration does not exist or is invalid, respectively. If boilerplate
+        does not exist, then :class:`BoilerplateNotFound` is raised.
+
+        Parameters
+        ~~~~~~~~~~
+        name: :class:`str`
+            The name of boilerplate.
+        """
+        bp_dir = utils.get_prept_dir('boilerplates', name)
+
+        if not bp_dir.exists():
+            raise BoilerplateNotFound(name)
+        
+        return cls.from_path(bp_dir)
 
     @classmethod
     def resolve(cls, value: Any) -> Self:
@@ -178,7 +205,7 @@ class BoilerplateInfo:
                 # silently ignore it and continue to next way of resolution.
                 pass
 
-        raise BoilerplateNotFound(str(value))
+        return cls.from_installation(str(value))
 
     def dump(self) -> dict[str, Any]:
         """Returns the boilerplate in raw data form.

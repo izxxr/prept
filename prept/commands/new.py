@@ -4,9 +4,9 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+from prept.errors import PreptError
 from prept.cli import outputs
 from prept.cli.params import BOILERPLATE
-from prept.errors import PreptError
 
 import click
 import shutil
