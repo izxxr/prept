@@ -1,0 +1,6 @@
+{
+    "typeCheckingMode": "strict",
+    "reportUnnecessaryIsInstance": "none",
+    "reportPrivateImportUsage": "none",
+    "reportPrivateUsage": "none"
+}
