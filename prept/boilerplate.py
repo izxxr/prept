@@ -35,12 +35,14 @@ class BoilerplateInfo:
         summary: str | None = None,
         version: Version | str | None = None,
         ignore_paths: list[str] | None = None,
+        default_generate_directory: str | None = None,
     ):
         self._path = path
         self.ignore_paths = ignore_paths or []
         self.name = name
         self.summary = summary
         self.version = version
+        self.default_generate_directory = default_generate_directory
 
     def _get_generated_files(self) -> Iterator[pathlib.Path]:
         ignore_paths = set(self._ignore_paths).union(DEFAULT_IGNORED_PATHS)
@@ -135,6 +137,24 @@ class BoilerplateInfo:
 
         self._ignore_paths = value
 
+    @property
+    def default_generate_directory(self) -> str:
+        """The default directory that boilerplate generates code in.
+
+        This directory is used (or created) if user does not specify
+        `-O` in "prept new" command.
+
+        If not provided, defaults to the name of boilerplate.
+        """
+        return self._default_generate_directory or self._name
+
+    @default_generate_directory.setter
+    def default_generate_directory(self, value: str | None) -> None:
+        if value is not None and not isinstance(value, str):
+            raise InvalidConfig('default_generate_directory', 'default_generate_directory must be a string')
+
+        self._default_generate_directory = value
+
     @classmethod
     def from_path(cls, path: pathlib.Path | str) -> Self:
         """Loads boilerplate information from its path.
@@ -168,6 +188,7 @@ class BoilerplateInfo:
             summary=data.get('summary'),
             version=data.get('version'),
             ignore_paths=data.get('ignore_paths'),
+            default_generate_directory=data.get('default_generate_directory'),
         )
     
     @classmethod
@@ -221,6 +242,12 @@ class BoilerplateInfo:
 
         if self._version:
             data['version'] = self._version
+        
+        if self._ignore_paths:
+            data['ignore_paths'] = self._ignore_paths
+
+        if self._default_generate_directory:
+            data['default_generate_directory'] = self._default_generate_directory
 
         return data
 

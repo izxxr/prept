@@ -31,24 +31,22 @@ __all__ = (
     '--output', '-O',
     required=False,
     default=None,
-    prompt=(
-        outputs.cli_msg('OUTPUT', 'Where should the project be generated?\n', prefix_opts={'fg': 'black'}) +
-        outputs.cli_msg('', 'If not provided, a new directory with the name of boilerplate is created.\n\n') + 
-        outputs.cli_msg('', 'Output')
-    ),
     type=click.Path(file_okay=False, dir_okay=True, readable=True, writable=True, path_type=pathlib.Path),
     help='The output directory in which the generated files are put into.',
 )
 def new(
     ctx: click.Context,
     boilerplate: BoilerplateInfo,
-    output: pathlib.Path,
+    output: pathlib.Path | None = None,
 ):
     """Generate a skeleton project from a boilerplate.
 
     BOILERPLATE is the name or path of boilerplate to generate from.
     """
     outputs.echo_info(f'Generating project from boilerplate: {boilerplate.name}')
+
+    if output is None:
+        output = pathlib.Path(boilerplate.default_generate_directory)
 
     out_abs = output.absolute()  # for outputs
     if not output.exists():
@@ -61,6 +59,13 @@ def new(
             return
         else:
             outputs.echo_info(f'Successfully created project directory at {out_abs}')
+    else:
+        outputs.echo_warning(f'Directory \'{output.absolute()}\' already exists!')
+        click.echo(outputs.cli_msg('', 'Previous content that can be overwritten will be lost if you proceed.'))
+
+        if not click.confirm(outputs.cli_msg('', 'Do you wish to overwrite existing directory content?')):
+            outputs.echo_info('Exited without making any changes.')
+            return
 
     outputs.echo_info(f'Creating project files at \'{out_abs}\'')
     click.echo()
