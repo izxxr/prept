@@ -262,7 +262,9 @@ class BoilerplateInfo:
         return self._allow_extra_variables
     
     @allow_extra_variables.setter
-    def allow_extra_variables(self, value: bool) -> None:
+    def allow_extra_variables(self, value: bool | None) -> None:
+        if value is None:
+            value = False
         if not isinstance(value, bool):
             raise InvalidConfig('allow_extra_variables', 'allow_extra_variables must be a boolean value')
         
@@ -305,7 +307,7 @@ class BoilerplateInfo:
             template_provider=data.get('template_provider'),
             template_files=data.get('template_files'),
             template_variables=data.get('template_variables'),
-            allow_extra_variables=data.get('allow_extra_variables', False),
+            allow_extra_variables=data.get('allow_extra_variables'),
         )
     
     @classmethod
