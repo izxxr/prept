@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, ClassVar
+from types import ModuleType
 from prept.errors import TemplateProviderNotFound
 
 import string
-import importlib
+import sys
+import importlib.util
+import importlib.machinery
 
 if TYPE_CHECKING:
     from prept.context import GenerationContext
@@ -17,6 +20,20 @@ __all__ = (
     'TemplateProvider',
     'StringTemplateProvider',
 )
+
+
+def _load_module_from_spec(spec: importlib.machinery.ModuleSpec, mod_name: str) -> ModuleType:
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[mod_name] = module
+    assert spec.loader is not None
+
+    try:
+        spec.loader.exec_module(module)
+    except Exception as e:
+        del sys.modules[mod_name]
+        raise RuntimeError from e  # for wrapping purposes
+    else:
+        return module
 
 
 def get_prept_template_provider(name: str) -> type[TemplateProvider] | None:
@@ -60,6 +77,9 @@ def resolve_template_provider(name: str) -> type[TemplateProvider]:
     ~~~~~~~
     type[:class:`TemplateProvider`]
     """
+    # TODO: exceptions raised by this function should be more fine grained
+    # instead of just plain TemplateProviderNotFound
+
     parts = name.split("::")
     if not parts:
         raise TemplateProviderNotFound(name)
@@ -77,9 +97,13 @@ def resolve_template_provider(name: str) -> type[TemplateProvider]:
     if not provider_name:
         raise TemplateProviderNotFound(name)
 
+    spec = importlib.util.find_spec(package.strip())
+    if spec is None:
+        raise TemplateProviderNotFound(name) from None
+
     try:
-        module = importlib.import_module(package.strip())
-    except ImportError:
+        module = _load_module_from_spec(spec, package.strip())
+    except RuntimeError:
         raise TemplateProviderNotFound(name) from None
 
     resolver = getattr(module, 'get_prept_template_provider', None)
@@ -90,7 +114,7 @@ def resolve_template_provider(name: str) -> type[TemplateProvider]:
             provider = resolver(provider_name)
         except Exception:
             raise TemplateProviderNotFound(name) from None
-        
+
     if provider is None:
         raise TemplateProviderNotFound(name)
     
