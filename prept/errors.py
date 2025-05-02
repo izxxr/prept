@@ -95,5 +95,5 @@ class BoilerplateNotFound(PreptCLIError):
 class TemplateProviderNotFound(PreptCLIError):
     """Error raised when template provider is not found, not installed, or has invalid name."""
 
-    def __init__(self, name: str) -> None:
-        super().__init__(f'The template provider {name!r} is not found or invalid')
+    def __init__(self, name: str, reason: str) -> None:
+        super().__init__(f'The template provider {name!r} is not found or invalid ({reason})')

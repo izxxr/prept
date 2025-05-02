@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, ClassVar
 from types import ModuleType
-from prept.errors import TemplateProviderNotFound
+from prept.errors import TemplateProviderNotFound, InvalidConfig
 
 import string
 import sys
@@ -77,34 +77,33 @@ def resolve_template_provider(name: str) -> type[TemplateProvider]:
     ~~~~~~~
     type[:class:`TemplateProvider`]
     """
-    # TODO: exceptions raised by this function should be more fine grained
-    # instead of just plain TemplateProviderNotFound
-
     parts = name.split("::")
     if not parts:
-        raise TemplateProviderNotFound(name)
+        raise InvalidConfig('template_provider', 'Template provider name cannot be empty')
 
     if len(parts) == 1:
         package = 'prept.providers'
         provider_name = parts[0]
     elif len(parts) == 2:
         package, provider_name = parts
+        package = package.strip()
+        provider_name = provider_name.strip()
     else:
-        raise TemplateProviderNotFound(name)
+        raise TemplateProviderNotFound(name, 'too many separators')
 
     if not package:
         package = 'prept.providers'
     if not provider_name:
-        raise TemplateProviderNotFound(name)
+        raise TemplateProviderNotFound(name, 'no provider name given')
 
-    spec = importlib.util.find_spec(package.strip())
+    spec = importlib.util.find_spec(package)
     if spec is None:
-        raise TemplateProviderNotFound(name) from None
+        raise TemplateProviderNotFound(name, f'could not find module {package!r}') from None
 
     try:
         module = _load_module_from_spec(spec, package.strip())
     except RuntimeError:
-        raise TemplateProviderNotFound(name) from None
+        raise TemplateProviderNotFound(name, f'could not load module {package!r}') from None
 
     resolver = getattr(module, 'get_prept_template_provider', None)
     if resolver is None:
@@ -112,11 +111,11 @@ def resolve_template_provider(name: str) -> type[TemplateProvider]:
     else:
         try:
             provider = resolver(provider_name)
-        except Exception:
-            raise TemplateProviderNotFound(name) from None
+        except Exception as e:
+            raise TemplateProviderNotFound(name, f'error in resolution: {e}') from None
 
     if provider is None:
-        raise TemplateProviderNotFound(name)
+        raise TemplateProviderNotFound(name, 'failed to resolve')
     
     return provider
 
