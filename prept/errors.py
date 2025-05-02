@@ -13,6 +13,7 @@ __all__ = (
     'ConfigNotFound',
     'InvalidConfig',
     'BoilerplateNotFound',
+    'TemplateProviderNotFound',
 )
 
 
@@ -89,3 +90,10 @@ class BoilerplateNotFound(PreptCLIError):
     def __init__(self, name: str) -> None:
         self.name = name
         super().__init__(f'No boilerplate with name {name!r} is installed')
+
+
+class TemplateProviderNotFound(PreptCLIError):
+    """Error raised when template provider is not found, not installed, or has invalid name."""
+
+    def __init__(self, name: str) -> None:
+        super().__init__(f'The name of template provider {name!r} is not found or invalid')

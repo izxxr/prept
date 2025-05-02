@@ -5,12 +5,16 @@ from __future__ import annotations
 from typing import Any, Iterator
 from typing_extensions import Self
 from packaging.version import Version, InvalidVersion
-from prept.errors import InvalidConfig, ConfigNotFound, BoilerplateNotFound
-from prept import utils
+from prept.errors import InvalidConfig, ConfigNotFound, BoilerplateNotFound, PreptCLIError
+from prept.context import GenerationContext
+from prept.variables import TemplateVariable
+from prept.cli import outputs
+from prept import utils, providers
 
 import re
 import os
 import json
+import click
 import pathspec
 import pathlib
 
@@ -36,6 +40,9 @@ class BoilerplateInfo:
         version: Version | str | None = None,
         ignore_paths: list[str] | None = None,
         default_generate_directory: str | None = None,
+        template_provider: str | None = None,
+        template_files: list[str] | None = None,
+        template_variables: dict[str, dict[str, Any]] | None = None,
     ):
         self._path = path
         self.ignore_paths = ignore_paths or []
@@ -43,19 +50,81 @@ class BoilerplateInfo:
         self.summary = summary
         self.version = version
         self.default_generate_directory = default_generate_directory
+        self.template_provider = template_provider
+        self.template_files = template_files
+
+        if template_variables is None:
+            self.template_variables = {}
+        else:
+            self.template_variables = {
+                name: TemplateVariable._from_data(self, name, data)
+                for name, data in template_variables.items()
+            }
 
     def _get_generated_files(self) -> Iterator[pathlib.Path]:
         ignore_paths = set(self._ignore_paths).union(DEFAULT_IGNORED_PATHS)
-        spec = pathspec.PathSpec.from_lines("gitwildmatch", ignore_paths)
+        spec = pathspec.PathSpec.from_lines('gitwildmatch', ignore_paths)
 
         for file in spec.match_tree(self.path, negate=True):
             yield pathlib.Path(self.path / file).relative_to(self.path)
 
     def _get_installation_files(self) -> Iterator[pathlib.Path]:
-        spec = pathspec.PathSpec.from_lines("gitwildmatch", [])
+        spec = pathspec.PathSpec.from_lines('gitwildmatch', [])
 
         for file in spec.match_tree(self.path, negate=True):
             yield pathlib.Path(self.path / file).relative_to(self.path)
+
+    def _get_generation_context(self, output: pathlib.Path, variables: dict[str, Any]) -> GenerationContext:
+        return GenerationContext(boilerplate=self, output_dir=output, variables=variables)
+
+    def _is_template_file(self, file: pathlib.Path) -> bool:
+        """Returns True if the given file is a template file."""
+        spec = pathspec.PathSpec.from_lines('gitwildmatch', self.template_files)
+        return spec.match_file((self.path / file).relative_to(self.path))
+
+    def _resolve_variables(self, input_vars: list[tuple[str, str]]) -> dict[str, Any]:
+        resolved = {
+            name: value
+            for name, value in input_vars
+        }
+        invalid = set(resolved).difference(self.template_variables)
+        if invalid:
+            raise PreptCLIError(f'Invalid template variables provided: {", ".join(invalid)}')
+
+        for var_name, var in self.template_variables.items():
+            if var_name in resolved:
+                continue
+            if var.summary:
+                click.echo(outputs.cli_msg(f'OPTION', var.summary, prefix_opts={'fg': 'cyan'}))
+                prompt = var.name
+            else:
+                click.echo(outputs.cli_msg(f'OPTION', var.name, prefix_opts={'fg': 'cyan'}))
+                prompt = ''
+            
+            prompt += ' (required)' if var.required else ' (optional)'
+
+            if not var.required and var.default is None:
+                # If variable is optional and has no default, set default to
+                # UNDEFINED to differentiate from None (Click's representation for no default)
+                default = utils.UNDEFINED
+            else:
+                default = var.default
+
+            click.echo()
+            value = click.prompt(
+                outputs.cli_msg('', prompt),
+                default=default,
+                show_default=default is not utils.UNDEFINED,
+                value_proc=lambda v: v  # needed to prevent copying of undefined sentinel
+            )
+            click.echo()
+
+            if value is utils.UNDEFINED:
+                continue
+
+            resolved[var_name] = value
+
+        return resolved
 
     @property
     def path(self) -> pathlib.Path:
@@ -155,6 +224,37 @@ class BoilerplateInfo:
 
         self._default_generate_directory = value
 
+    @property
+    def template_provider(self) -> type[providers.TemplateProvider] | None:
+        """The template provider for this boilerplate, if any."""
+        return self._template_provider
+    
+    @template_provider.setter
+    def template_provider(self, value: type[providers.TemplateProvider] | str | None) -> None:
+        if value is None:
+            self._template_provider = None
+            return
+        if isinstance(value, str):
+            value = providers.resolve_template_provider(value)
+        if not issubclass(value, providers.TemplateProvider):
+            raise InvalidConfig('template_provider', 'Invalid template provider, not a subclass of TemplateProvider')
+
+        self._template_provider = value
+
+    @property
+    def template_files(self) -> list[str]:
+        """List of file paths (as patterns) that are templates."""
+        return self._template_files
+
+    @template_files.setter
+    def template_files(self, value: list[str] | None) -> None:
+        if value is None:
+            value = []
+        if list(filter(lambda v: not isinstance(v, str), value)):
+            raise InvalidConfig('template_files', 'template_files cannot contain non-string entries')
+
+        self._template_files = value
+
     @classmethod
     def from_path(cls, path: pathlib.Path | str) -> Self:
         """Loads boilerplate information from its path.
@@ -189,6 +289,9 @@ class BoilerplateInfo:
             version=data.get('version'),
             ignore_paths=data.get('ignore_paths'),
             default_generate_directory=data.get('default_generate_directory'),
+            template_provider=data.get('template_provider'),
+            template_files=data.get('template_files'),
+            template_variables=data.get('template_variables'),
         )
     
     @classmethod
@@ -204,7 +307,7 @@ class BoilerplateInfo:
         name: :class:`str`
             The name of boilerplate.
         """
-        bp_dir = utils.get_prept_dir('boilerplates', name)
+        bp_dir = utils.get_prept_dir('boilerplates', name.lower())
 
         if not bp_dir.exists():
             raise BoilerplateNotFound(name)
@@ -221,10 +324,12 @@ class BoilerplateInfo:
         if isinstance(value, (pathlib.Path, str)) and os.path.exists(value):
             try:
                 return cls.from_path(value)
-            except Exception:
-                # If from_path() fails (e.g. no preptconfig.json in given path), we
-                # silently ignore it and continue to next way of resolution.
-                pass
+            except Exception as e:
+                if not isinstance(e, ConfigNotFound):
+                    # If from_path() fails (i.e. no preptconfig.json in given path), we
+                    # silently ignore it and continue to next way of resolution. For any
+                    # other error, raise it.
+                    raise
 
         return cls.from_installation(str(value))
 

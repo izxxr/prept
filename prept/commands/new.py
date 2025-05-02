@@ -34,10 +34,19 @@ __all__ = (
     type=click.Path(file_okay=False, dir_okay=True, readable=True, writable=True, path_type=pathlib.Path),
     help='The output directory in which the generated files are put into.',
 )
+@click.option(
+    '--var', '-V',
+    nargs=2,
+    multiple=True,
+    required=False,
+    default=None,
+    help='The name/value pair of template variables in "-V <name> <value>" format.'
+)
 def new(
     ctx: click.Context,
     boilerplate: BoilerplateInfo,
     output: pathlib.Path | None = None,
+    var: list[tuple[str, str]] | None = None,
 ):
     """Generate a skeleton project from a boilerplate.
 
@@ -67,8 +76,16 @@ def new(
             outputs.echo_info('Exited without making any changes.')
             return
 
+    outputs.echo_info('Processing template variables')
+    variables = boilerplate._resolve_variables(var or [])
+
     outputs.echo_info(f'Creating project files at \'{out_abs}\'')
     click.echo()
+
+    genctx = boilerplate._get_generation_context(
+        output=output,
+        variables=variables,
+    )
 
     for file in boilerplate._get_generated_files():
         bp_file = boilerplate.path / file
@@ -76,13 +93,25 @@ def new(
 
         click.echo(outputs.cli_msg('', f'├── Creating {output.name / file} ... '), nl=False)
 
+        genctx._set_current_file(file.name, bp_file)
+        assert genctx._current_file is not None
+
         try:
             os.makedirs(output_dir, exist_ok=True)
             shutil.copy(bp_file, output_dir)
         except Exception:
             click.secho('ERROR', fg='red')
             raise PreptError(f'Failed to copy boilerplate file {bp_file} to installation directory at {output / file}')
-        else:
+
+        click.secho('DONE', fg='green')
+
+        if boilerplate._is_template_file(file) and boilerplate.template_provider is not None:
+            click.echo(outputs.cli_msg('', f'├── Applying template on {output.name / file} ... '), nl=False)
+
+            content = boilerplate.template_provider().render(genctx)
+            with open(output / file, 'wb' if isinstance(content, bytes) else 'w') as f:
+                f.write(content)
+
             click.secho('DONE', fg='green')
 
     click.echo()

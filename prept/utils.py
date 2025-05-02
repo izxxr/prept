@@ -6,8 +6,16 @@ import click
 import pathlib
 
 __all__ = (
+    'UNDEFINED',
     'get_prept_dir',
 )
+
+
+class _Undefined:
+    ...
+
+UNDEFINED = _Undefined()
+
 
 def get_prept_dir(*subdirs: str) -> pathlib.Path:
     """Gets the directory for Prept.

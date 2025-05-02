@@ -54,7 +54,7 @@ def install(ctx: click.Context, boilerplate: BoilerplateInfo):
 
         overwrite = True
 
-    target = utils.get_prept_dir('boilerplates', boilerplate.name)
+    target = utils.get_prept_dir('boilerplates', boilerplate.name.lower())
 
     # \b in messages below prevents double spacing if version is not present
     if overwrite:
