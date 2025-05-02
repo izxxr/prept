@@ -43,6 +43,7 @@ class BoilerplateInfo:
         template_provider: str | None = None,
         template_files: list[str] | None = None,
         template_variables: dict[str, dict[str, Any]] | None = None,
+        allow_extra_variables: bool = False,
     ):
         self._path = path
         self.ignore_paths = ignore_paths or []
@@ -52,6 +53,7 @@ class BoilerplateInfo:
         self.default_generate_directory = default_generate_directory
         self.template_provider = template_provider
         self.template_files = template_files
+        self.allow_extra_variables = allow_extra_variables
 
         if template_variables is None:
             self.template_variables = {}
@@ -78,7 +80,6 @@ class BoilerplateInfo:
         return GenerationContext(boilerplate=self, output_dir=output, variables=variables)
 
     def _is_template_file(self, file: pathlib.Path) -> bool:
-        """Returns True if the given file is a template file."""
         spec = pathspec.PathSpec.from_lines('gitwildmatch', self.template_files)
         return spec.match_file((self.path / file).relative_to(self.path))
 
@@ -255,6 +256,18 @@ class BoilerplateInfo:
 
         self._template_files = value
 
+    @property
+    def allow_extra_variables(self) -> bool:
+        """Whether arbitrary variables that are not in template_variables are allowed."""
+        return self._allow_extra_variables
+    
+    @allow_extra_variables.setter
+    def allow_extra_variables(self, value: bool) -> None:
+        if not isinstance(value, bool):
+            raise InvalidConfig('allow_extra_variables', 'allow_extra_variables must be a boolean value')
+        
+        self._allow_extra_variables = value
+
     @classmethod
     def from_path(cls, path: pathlib.Path | str) -> Self:
         """Loads boilerplate information from its path.
@@ -292,6 +305,7 @@ class BoilerplateInfo:
             template_provider=data.get('template_provider'),
             template_files=data.get('template_files'),
             template_variables=data.get('template_variables'),
+            allow_extra_variables=data.get('allow_extra_variables', False),
         )
     
     @classmethod
