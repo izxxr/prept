@@ -1,0 +1,57 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "prept"
+version = "0.1.0"
+description = "Tool for managing and generating boilerplatesI"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.9"
+authors = [
+    { name = "Izhar Ahmad", email = "thisisizharahmad@gmail.com" }
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: MIT License",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Topic :: Internet",
+    "Topic :: Utilities",
+    "Topic :: Software Development :: Code Generators",
+    "Typing :: Typed",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
+dynamic = ["dependencies"]
+
+[project.urls]
+Homepage = "https://prept.rtfd.io"
+Repository = "https://github.com/izxxr/prept"
+Documentation = "https://prept.rtfd.io"
+Issues = "https://github.com/izxxr/prept/issues"
+
+[tool.setuptools.dynamic]
+dependencies = { file = "requirements.txt" }
+
+[project.optional-dependencies]
+jinja = [
+    "Jinja2 >= 3.0.0"
+]
+
+[tool.setuptools]
+packages = [
+    "prept",
+    "prept.cli",
+    "prept.commands",
+]
+include-package-data = true
+
+[project.scripts]
+prept = "prept.cli.main:cli"
