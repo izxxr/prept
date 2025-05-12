@@ -48,13 +48,22 @@ def _load_module_from_spec(spec: importlib.machinery.ModuleSpec, mod_name: str) 
 def get_prept_template_provider(name: str) -> type[TemplateProvider] | None:
     """Prept's default template provider resolver.
 
-    Packages providing custom template providers should
-    define a similar function.
+    Packages providing custom template providers should define
+    this function at module level. Prept will call this function
+    at generation time with the provider name from preptconfig.json.
+
+    This function should return a subclass of :class:`TemplateProvider`
+    or ``None`` if provider name is invalid.
 
     Parameters
     ~~~~~~~~~~
     name: :class:`str`
         The provider's name.
+
+    Returns
+    ~~~~~~~
+    type[:class:`TemplateProvider`]
+        The template provider resolved from given name.
     """
     if name == StringTemplateProvider.name:
         return StringTemplateProvider
@@ -94,6 +103,7 @@ def resolve_template_provider(name: str) -> type[TemplateProvider]:
     Returns
     ~~~~~~~
     type[:class:`TemplateProvider`]
+        The resolved template provider.
     """
     parts = name.split("::")
     if not parts:
@@ -147,9 +157,25 @@ def resolve_template_provider(name: str) -> type[TemplateProvider]:
 class TemplateProvider:
     """Base class for all template providers.
 
+    Template providers are "middleware" classes that process the content
+    of template files at generation time and inject the values of template
+    variables.
+
     All template providers, external or provided by Prept, inherit from
     this class and implement the :meth:`.render` method. All providers
-    must also set the name class attribute.
+    must also set the :attr:`.name` class attribute.
+
+    Prept provides the following built-in template providers:
+
+    - :class:`StringTemplateProvider` for $-substitutions based templating
+    - :class:`Jinja2TemplateProvider` for Jinja templates (requires Jinja2 installed)
+
+    Attributes
+    ~~~~~~~~~~
+    name: :class:`str`
+        Class attribute.
+
+        The name used to identify the template provider.
     """
     name: ClassVar[str]
 
@@ -175,13 +201,15 @@ class TemplateProvider:
 
 
 class StringTemplateProvider(TemplateProvider):
-    """$-substitutions based templating by :class:`string.Template`.
+    """$-substitutions based templates by :class:`string.Template`.
 
     This uses :meth:`string.Template.safe_substitute()` to ensure that any invalid
     or missing variables are silently ignored at render time.
+
+    This is identified by the ``stringsub`` name.
     """
 
-    name = 'string-sub'
+    name = 'stringsub'
 
     def render(self, context: GenerationContext) -> str:
         content = context.current_file.read()
@@ -189,7 +217,41 @@ class StringTemplateProvider(TemplateProvider):
 
 
 class Jinja2TemplateProvider(TemplateProvider):
-    """Provider based on Jinja2 templating."""
+    """Provider based on Jinja2 templates.
+
+    This template provider requires Jinja2 to be installed.
+
+    Jinja templates are commonly used for HTML files in web frameworks such
+    as Flask. However, it can be used for any kind of source file.
+
+    The following is an example of Jinja template HTML file (taken directly
+    from Jinja2 documentation):
+
+    .. code-block:: html
+
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <title>My Webpage</title>
+        </head>
+        <body>
+            <ul id="navigation">
+            {% for item in navigation %}
+                <li><a href="{{ item.href }}">{{ item.caption }}</a></li>
+            {% endfor %}
+            </ul>
+
+            <h1>My Webpage</h1>
+            {{ a_variable }}
+
+            {# a comment #}
+        </body>
+        </html>
+
+    For more information, please refer to Jinja documentation: https://jinja.palletsprojects.com/
+
+    This is identified by the ``jinja2`` name.
+    """
 
     name = 'jinja2'
 

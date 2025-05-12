@@ -19,7 +19,11 @@ PATTERN_VARIABLE_NAME = re.compile(r'^[A-Za-z_][A-Za-z0-9_]*$')
 
 
 class TemplateVariable:
-    """Wrapper class around template variable structure."""
+    """Wrapper class around template variable structure.
+
+    These are the objects in values of ``template_variables`` key
+    in preptconfig.json.
+    """
     def __init__(
         self,
         boilerplate: BoilerplateInfo,
@@ -67,7 +71,11 @@ class TemplateVariable:
 
     @property
     def summary(self) -> str | None:
-        """A summary or brief describing the variable."""
+        """A summary or brief describing the variable.
+
+        This can be set to ``None`` or ``null`` in preptconfig.json which
+        is the default setting.
+        """
         return self._summary
     
     @summary.setter
@@ -79,7 +87,10 @@ class TemplateVariable:
 
     @property
     def required(self) -> bool:
-        """Whether the variable is required."""
+        """Whether the variable is required.
+
+        By default, variables are required.
+        """
         return self._required
 
     @required.setter
@@ -93,10 +104,29 @@ class TemplateVariable:
 
     @property
     def default(self) -> Any:
-        """The default value of this variable if variable is not set or None for no default value."""
+        """The default value of this variable.
+        
+        This is the value that is assigned to variable if no value is
+        provided to it at the time of generation. If set to None/null,
+        no default is set.
+
+        If this option is set (non-null), ``required`` is automatically
+        determined as false regardless of its user set value, if any.
+        """
         return self._default
     
     @default.setter
     def default(self, value: Any) -> Any:
         self._default = value
         self.required = value is not None
+
+    def _dump(self) -> dict[str, Any]:
+        data = {
+            'summary': self._summary,
+            'required': self._required,
+        }
+
+        if self._default is not None:
+            data['default'] = self._default
+
+        return data

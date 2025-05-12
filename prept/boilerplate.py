@@ -129,7 +129,11 @@ class BoilerplateInfo:
 
     @property
     def path(self) -> pathlib.Path:
-        """The path pointing towards this boilerplate."""
+        """The :class:`pathlib.Path` pointing towards this boilerplate.
+
+        Note that this is the path where the boilerplate configuration
+        file is located, not the generation path.
+        """
         return self._path
 
     @property
@@ -155,7 +159,11 @@ class BoilerplateInfo:
 
     @property
     def summary(self) -> str | None:
-        """A summary or brief describing the boilerplate."""
+        """A summary or brief describing the boilerplate.
+
+        This attribute can be set to ``None`` or ``null`` in preptconfig.json
+        which is the default setting.
+        """
         return self._summary
     
     @summary.setter
@@ -171,6 +179,9 @@ class BoilerplateInfo:
 
         If provided, version must follow the specification described
         in PEP 440: https://peps.python.org/pep-0440/
+
+        This attribute can be set to ``None`` or ``null`` in preptconfig.json
+        which is the default setting.
         """
         return self._version
  
@@ -195,6 +206,9 @@ class BoilerplateInfo:
         This option is useful in ignoring any irrelevant paths such as ``.git``. Note
         that Prept automatically ignores boilerplate configuration file regardless of
         the value of this attribute.
+
+        This attribute can be set to ``None`` or ``null`` in preptconfig.json to
+        include every file and directory which is the default setting.
         """
         return self._ignore_paths
 
@@ -214,7 +228,8 @@ class BoilerplateInfo:
         This directory is used (or created) if user does not specify
         `-O` in "prept new" command.
 
-        If not provided, defaults to the name of boilerplate.
+        If not provided or is None, defaults to the name of boilerplate at
+        the time of generation.
         """
         return self._default_generate_directory or self._name
 
@@ -227,7 +242,23 @@ class BoilerplateInfo:
 
     @property
     def template_provider(self) -> type[providers.TemplateProvider] | None:
-        """The template provider for this boilerplate, if any."""
+        """The name of template provider for this boilerplate, if any.
+        
+        Template providers act as middleware for processing template
+        files. See documentation of :class:`TemplateProvider` for
+        more information.
+
+        By default, no template provider is set. Prept provides two built-in
+        template providers by default:
+
+        - ``string-sub`` for $-substitutions
+        - ``jinja2`` based on Jinja templates (requires Jinja2 installed)
+
+        This option can take name of third party template providers as well
+        using ``::`` to separate package name and template provider name. For
+        example, ``foobar::baz`` means ``baz`` template provider from the ``foobar``
+        package or module.
+        """
         return self._template_provider
     
     @template_provider.setter
@@ -247,7 +278,15 @@ class BoilerplateInfo:
 
     @property
     def template_files(self) -> list[str]:
-        """List of file paths (as patterns) that are templates."""
+        """List of file paths (as patterns) that are templates.
+
+        These files are processed by the given template provider which
+        must also be set for this option to have any effect.
+
+        Note that this is a list of gitignore like patterns similar to
+        :attr:`.ignore_paths` setting so it is possible to include/exclude
+        all files at a specific path.
+        """
         return self._template_files
 
     @template_files.setter
@@ -261,7 +300,11 @@ class BoilerplateInfo:
 
     @property
     def allow_extra_variables(self) -> bool:
-        """Whether arbitrary variables that are not in template_variables are allowed."""
+        """Whether arbitrary variables that are not in template_variables are allowed.
+
+        This is false by default. If set to true, arbitrary variables are allowed
+        through the ``-V`` option in ``prept new`` command.
+        """
         return self._allow_extra_variables
     
     @allow_extra_variables.setter
@@ -278,12 +321,17 @@ class BoilerplateInfo:
         """Loads boilerplate information from its path.
 
         Raises :class:`ConfigNotFound` or :class:`InvalidConfig` if boilerplate
-        configuration does not exist or is invalid.
+        configuration does not exist or is invalid, respectively.
 
         Parameters
         ~~~~~~~~~~
         path: :class:`pathlib.Path` | :class:`str`
             The path to boilerplate directory.
+
+        Returns
+        ~~~~~~~
+        :class:`BoilerplateInfo`
+            The loaded boilerplate.
         """
         if not isinstance(path, pathlib.Path):
             path = pathlib.Path(path)
@@ -325,6 +373,11 @@ class BoilerplateInfo:
         ~~~~~~~~~~
         name: :class:`str`
             The name of boilerplate.
+
+        Returns
+        ~~~~~~~
+        :class:`BoilerplateInfo`
+            The loaded boilerplate.
         """
         bp_dir = utils.get_prept_dir('boilerplates', name.lower())
 
@@ -337,8 +390,21 @@ class BoilerplateInfo:
     def resolve(cls, value: Any) -> Self:
         """Resolves a boilerplate from given value.
 
-        If boilerplate cannot be resolved, :class:`BoilerplateNotFound` error
-        is raised.
+        The resolution order is as follows:
+
+        - The passed value is first tested as path and if the path exists, boilerplate
+          is loaded from this path if possible.
+
+        - If path resolution fails, boilerplate is loaded from installation.
+
+        
+        If boilerplate cannot be resolved through any step, the :class:`BoilerplateNotFound`
+        error is raised.
+
+        Returns
+        ~~~~~~~
+        :class:`BoilerplateInfo`
+            The loaded boilerplate.
         """
         if isinstance(value, (pathlib.Path, str)) and os.path.exists(value):
             try:
@@ -373,6 +439,18 @@ class BoilerplateInfo:
         if self._default_generate_directory:
             data['default_generate_directory'] = self._default_generate_directory
 
+        if self._template_provider:
+            data['template_provider'] = self._template_provider
+
+        if self._template_files:
+            data['ignore_paths'] = self._ignore_paths
+
+        if self.template_variables:
+            data['template_variables'] = {v.name: v._dump() for v in self.template_variables.values()}
+
+        if self._allow_extra_variables:
+            data['allow_extra_variables'] = self.allow_extra_variables
+
         return data
 
     def save(self) -> None:
@@ -380,6 +458,6 @@ class BoilerplateInfo:
 
         If configuration is not already present (boilerplate is not initialized), it
         is saved hence initializing the boilerplate.
-        """        
+        """
         with open(self.path, 'w') as f:
             json.dump(self.dump(), f, indent=4)

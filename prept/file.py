@@ -17,6 +17,9 @@ __all__ = (
 class BoilerplateFile:
     """Represents a file from a boilerplate.
 
+    This class provides interface for interacting with the file, usually at
+    the generation time.
+
     Attributes
     ~~~~~~~~~~
     boilerplate: :class:`BoilerplateInfo`
