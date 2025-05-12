@@ -237,7 +237,10 @@ class BoilerplateInfo:
             return
         if isinstance(value, str):
             value = providers.resolve_template_provider(value)
-        if not issubclass(value, providers.TemplateProvider):
+
+        # See comment in TemplateProvider for explanation of why getattr()
+        # is used here instead of issubclass() with TemplateProvider
+        if not getattr(value, '__prept_template_provider__', False):
             raise InvalidConfig('template_provider', 'Invalid template provider, not a subclass of TemplateProvider')
 
         self._template_provider = value

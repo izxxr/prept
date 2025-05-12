@@ -4,12 +4,20 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, ClassVar
 from types import ModuleType
-from prept.errors import TemplateProviderNotFound, InvalidConfig
+from prept.context import GenerationContext
+from prept.errors import TemplateProviderNotFound, InvalidConfig, PreptCLIError
 
 import string
 import sys
 import importlib.util
 import importlib.machinery
+
+try:
+    import jinja2
+except ImportError:
+    jinja2 = None
+
+_JINJA2_INSTALLED = jinja2 is not None
 
 if TYPE_CHECKING:
     from prept.context import GenerationContext
@@ -19,6 +27,7 @@ __all__ = (
     'get_prept_template_provider',
     'TemplateProvider',
     'StringTemplateProvider',
+    'Jinja2TemplateProvider',
 )
 
 
@@ -47,8 +56,17 @@ def get_prept_template_provider(name: str) -> type[TemplateProvider] | None:
     name: :class:`str`
         The provider's name.
     """
-    if name == 'string-template':
+    if name == StringTemplateProvider.name:
         return StringTemplateProvider
+
+    if name == Jinja2TemplateProvider.name:
+        if not _JINJA2_INSTALLED:
+            raise PreptCLIError(
+                'Jinja must be installed in order to use the "jinja2" template provider. ',
+                hint='See https://jinja.palletsprojects.com/en/stable/intro/#installation for help on installing Jinja2'
+            )
+
+        return Jinja2TemplateProvider
 
     return None
 
@@ -112,11 +130,17 @@ def resolve_template_provider(name: str) -> type[TemplateProvider]:
         try:
             provider = resolver(provider_name)
         except Exception as e:
+            if isinstance(e, PreptCLIError):
+                raise
+
             raise TemplateProviderNotFound(name, f'error in resolution: {e}') from None
 
     if provider is None:
         raise TemplateProviderNotFound(name, 'failed to resolve')
-    
+
+    if not getattr(provider, '__prept_template_provider__', False):
+        raise TemplateProviderNotFound(name, f'not a subclass of TemplateProvider; found {provider!r}')
+
     return provider
 
 
@@ -127,8 +151,14 @@ class TemplateProvider:
     this class and implement the :meth:`.render` method. All providers
     must also set the name class attribute.
     """
-
     name: ClassVar[str]
+
+    # This marker is used to check if given template provider inherits
+    # from this base TemplateProvider class. Because resolve_template_provider()
+    # uses importlib to load module from spec, issubclass() helper does not work
+    # properly due to separate class objects being created.
+    # See this SO question: https://stackoverflow.com/q/11461356
+    __prept_template_provider__ = True
 
     def render(self, context: GenerationContext) -> str | bytes:
         """Renders the template.
@@ -151,8 +181,22 @@ class StringTemplateProvider(TemplateProvider):
     or missing variables are silently ignored at render time.
     """
 
-    name = "string-template"
+    name = 'string-sub'
 
     def render(self, context: GenerationContext) -> str:
         content = context.current_file.read()
         return string.Template(content).safe_substitute(context.variables)
+
+
+class Jinja2TemplateProvider(TemplateProvider):
+    """Provider based on Jinja2 templating."""
+
+    name = 'jinja2'
+
+    def render(self, context: GenerationContext) -> str | bytes:
+        assert jinja2 is not None  # this never fails
+        
+        src = context.current_file.read()
+        temp = jinja2.Template(src)
+        
+        return temp.render(context.variables)
