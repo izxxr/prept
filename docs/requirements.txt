@@ -1,0 +1,6 @@
+click==8.1.*
+packaging==25.*
+pathspec==0.12.*
+sphinx-click==6.*
+pydata-sphinx-theme==0.16.*
+typing_extensions==4.13.*
