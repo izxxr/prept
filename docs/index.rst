@@ -16,10 +16,21 @@ by reusing these boilerplates along with the features:
 - Built-in support for $-substitution and Jinja2 templates
 - Extensive customization options to manipulate generation behavior
 
+New to Prept?
+-------------
+
+If you are using Prept for the first time, take a look at our :ref:`guide-quickstart` page
+for a guide on using Prept and its core features.
+
+The :ref:`guide` section contains useful pages providing comprehensive details about usage
+of various Prept's features. For more advanced users, take a look at the :ref:`api` or
+the :ref:`cli` sections.
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
+   guide/index
    cli
    api/index
 
