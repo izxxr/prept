@@ -18,9 +18,12 @@ __all__ = (
 @click.pass_context
 @click.argument('name', required=True)
 def init(ctx: click.Context, name: str):
-    """Initiailize a boilerplate in the working directory.
+    """Initiailize a boilerplate in the current working directory.
 
-    NAME is the boilerplate name and must pass following set of rules:
+    This command simply creates a preptconfig.json configuration file in
+    the working directory.
+
+    ``NAME`` is the boilerplate name and must pass following set of rules:
 
     - Consists of alphanumeric, hyphens, and underscores characters.
     - Must begin with a letter or underscore.

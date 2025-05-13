@@ -10,6 +10,7 @@ import click
 
 __all__ = (
     'PreptError',
+    'PreptCLIError',
     'ConfigNotFound',
     'InvalidConfig',
     'BoilerplateNotFound',

@@ -26,12 +26,12 @@ __all__ = (
 def install(ctx: click.Context, boilerplate: BoilerplateInfo):
     """Installs a boilerplate globally.
 
-    BOILERPLATE is the path to a valid boilerplate directory (containing
+    ``BOILERPLATE`` is the path to a valid boilerplate directory (containing
     preptconfig.json) that is to be installed. If current working directory
     is the boilerplate template, use prept install . (dot in place of BOILERPLATE)
 
-    Global installations allow generation from boilerplates directly
-    using prept new BOILERPLATE instead of having to pass paths.
+    Global installations allow generation from boilerplates directly using
+    prept new BOILERPLATE using boilerplate name instead of having to pass paths.
 
     This command also exists for future proofing as it will be possible
     to install boilerplates from Git repositories and other third party

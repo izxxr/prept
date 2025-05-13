@@ -32,7 +32,12 @@ __all__ = (
     required=False,
     default=None,
     type=click.Path(file_okay=False, dir_okay=True, readable=True, writable=True, path_type=pathlib.Path),
-    help='The output directory in which the generated files are put into.',
+    help=(
+        'The output directory in which the generated files are put into.\n\n'
+        'This defaults to ``default_generate_directory`` in preptconfig.json if set otherwise '
+        'the name of boilerplate is used as default. If the directory does not exist, it is '
+        'created by Prept.'
+    )
 )
 @click.option(
     '--var', '-V',
@@ -40,7 +45,14 @@ __all__ = (
     multiple=True,
     required=False,
     default=None,
-    help='The name/value pair of template variables in "-V <name> <value>" format.'
+    help=(
+        'The name/value pair of template variables in "-V <name> <value>" format.\n\n'
+        'This takes variables corresponding to ``template_variables`` setting in preptconfig.json. If '
+        'some variables are not provided through this option, input for them is prompted when command is ran.\n\n'
+        'If ``allow_extra_variables`` setting is set to true in configuration, this option allows passing '
+        'variables that are not defined in template variables. If setting is false (default), this causes an error '
+        'to be thrown.'
+    )
 )
 def new(
     ctx: click.Context,
@@ -48,9 +60,10 @@ def new(
     output: pathlib.Path | None = None,
     var: list[tuple[str, str]] | None = None,
 ):
-    """Generate a skeleton project from a boilerplate.
+    """Bootstrap project from a boilerplate.
 
-    BOILERPLATE is the name or path of boilerplate to generate from.
+    ``BOILERPLATE`` is the name or path of boilerplate (containing preptconfig.json) to
+    generate the project from.
     """
     outputs.echo_info(f'Generating project from boilerplate: {boilerplate.name}')
 

@@ -16,7 +16,7 @@ __all__ = (
 @click.command(name='list')
 @click.pass_context
 def list_bps(ctx: click.Context):
-    """List installed boilerplates."""
+    """Show the list of installed boilerplates."""
     bps_dir = utils.get_prept_dir('boilerplates')
     total = 0
     listed = 0
