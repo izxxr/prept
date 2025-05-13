@@ -12,4 +12,4 @@ reusing these boilerplates along with the features:
 ## New to Prept?
 If you are using Prept for the first time, take a look at our
 [Getting Started](https://prept.readthedocs.io/en/latest/guide/quickstart.html) page for a
-guide on using Prept and its core features.
+guide on using Prept.
