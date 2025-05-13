@@ -11,6 +11,7 @@ import click
 __all__ = (
     'BOILERPLATE',
     'BOILERPLATE_PATH',
+    'BOILERPLATE_INSTALLED',
 )
 
 class BoilerplateParamType(click.ParamType):
@@ -28,8 +29,12 @@ class BoilerplateParamType(click.ParamType):
     """
     name = "boilerplate"
 
-    def __init__(self, *, exclude_installed: bool = False) -> None:
+    def __init__(self, *, exclude_installed: bool = False, exclude_path: bool = False) -> None:
+        if exclude_path and exclude_installed:
+            raise TypeError('exclude_path and exclude_installed are mututally exclusive')
+
         self.exclude_installed = exclude_installed
+        self.exclude_path = exclude_path
 
     def convert(self, value: Any, param: click.Parameter | None, ctx: click.Context | None) -> BoilerplateInfo:
         if isinstance(value, BoilerplateInfo):
@@ -38,9 +43,13 @@ class BoilerplateParamType(click.ParamType):
         if self.exclude_installed:
             return BoilerplateInfo.from_path(value)
 
+        if self.exclude_path:
+            return BoilerplateInfo.from_installation(value)
+
         # resolve() raises InvalidConfig, ConfigNotFound, or BoilerplateNotFound errors
         # which are all inherited from click.ClickException so they are handled properly.
         return BoilerplateInfo.resolve(value)
 
 BOILERPLATE = BoilerplateParamType()
 BOILERPLATE_PATH = BoilerplateParamType(exclude_installed=True)
+BOILERPLATE_INSTALLED = BoilerplateParamType(exclude_path=True)
