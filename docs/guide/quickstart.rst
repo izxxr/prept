@@ -187,10 +187,47 @@ updated configuration::
     command if it was previously installed to reflect the changes in global installation.
 
 We can now run ``prept new`` command and provide the value for ``APP_NAME`` variable
-for it to be injected into ``main.py``
+for it to be injected into ``main.py``.
+
+.. code-block:: sh
+
+    $ prept new python-web-app -O my-app
+    INFO    Generating project from boilerplate: python-web-app
+    INFO    No existing directory found. Creating project directory at 'D:\Projects\my-app'
+    INFO    Successfully created project directory at D:\Projects\my-app
+    INFO    Processing template variables
+    OPTION  The name of application.
+
+            APP_NAME (optional) [Simple Web Application]: Chat Application
+
+    INFO    Creating project files at 'D:\Projects\my-app'
+
+        ├── Creating my-app\main.py ... DONE
+        ├── Applying template on my-app\main.py ... DONE
+        ├── Creating my-app\routers\groups.py ... DONE
+        ├── Creating my-app\routers\messages.py ... DONE
+        ├── Creating my-app\routers\users.py ... DONE
+        ├── Creating my-app\utils.py ... DONE
+
+    SUCCESS Successfully generated project from 'python-web-app' boilerplate at 'D:\Projects\my-app'
 
 .. image:: ../_assets/prept_new_template.gif
     :alt: Usage of prept new command with template variables
+
+The generated ``main.py`` in project output directory has the following content::
+
+    import flask
+
+    app = flask.Flask(__name__)
+
+    @app.route('GET', '/')
+    def index():
+        return {'message': 'Welcome to Chat Application'}
+
+    if __name__ == '__main__':
+        app.run(debug=True)
+
+As you can see, ``$APP_NAME`` was replaced with ``Chat Application``.
 
 Next Steps
 ----------
