@@ -100,16 +100,16 @@ The following is the content of ``main.py`` in the same boilerplate we used in e
 above:
 
 ```py
-    import flask
+import flask
 
-    app = flask.Flask(__name__)
+app = flask.Flask(__name__)
 
-    @app.route('GET', '/')
-    def index():
-        return {'message': 'Welcome to $APP_NAME'}
+@app.route('GET', '/')
+def index():
+    return {'message': 'Welcome to $APP_NAME'}
 
-    if __name__ == '__main__':
-        app.run(debug=True)
+if __name__ == '__main__':
+    app.run(debug=True)
 ```
 
 Here, we are expecting that ``$APP_NAME`` can be replaced with a value that
