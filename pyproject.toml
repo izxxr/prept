@@ -7,7 +7,7 @@ name = "prept"
 version = "0.1.0"
 description = "Tool for managing and generating boilerplatesI"
 readme = "README.md"
-license = { file = "LICENSE" }
+license = "MIT"
 requires-python = ">=3.9"
 authors = [
     { name = "Izhar Ahmad", email = "thisisizharahmad@gmail.com" }
