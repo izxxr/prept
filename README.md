@@ -9,11 +9,6 @@ reusing these boilerplates along with the features:
 - Built-in support for $-substitution and Jinja2 templates
 - Extensive customization options to manipulate generation behavior
 
-## New to Prept?
-If you are using Prept for the first time, take a look at our
-[Getting Started](https://prept.readthedocs.io/en/latest/guide/quickstart.html) page for a
-guide on using Prept.
-
 ## Installation
 Prept can be installed through pip or another Python package manager:
 
