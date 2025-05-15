@@ -10,3 +10,5 @@ features of Prept.
     :maxdepth: 1
 
     quickstart
+    boilerplate
+    templating
