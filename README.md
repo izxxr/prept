@@ -99,6 +99,7 @@ with values provided by user at generation time.
 The following is the content of ``main.py`` in the same boilerplate we used in examples
 above:
 
+```py
     import flask
 
     app = flask.Flask(__name__)
@@ -109,6 +110,7 @@ above:
 
     if __name__ == '__main__':
         app.run(debug=True)
+```
 
 Here, we are expecting that ``$APP_NAME`` can be replaced with a value that
 user can provide at the time of project generation.
@@ -119,18 +121,20 @@ using the dollar sign ($) syntax as we used in main.py content above.
 We define template provider, files, and variables in preptconfig.json. Here is the
 updated configuration::
 
-    {
-        "name": "python-web-app",
-        "template_provider": "stringsub",
-        "template_files": ["main.py"],
-        "template_variables": {
-            "APP_NAME": {
-                "summary": "The name of application.",
-                "required": false,
-                "default": "Simple Web Application"
-            }
+```json
+{
+    "name": "python-web-app",
+    "template_provider": "stringsub",
+    "template_files": ["main.py"],
+    "template_variables": {
+        "APP_NAME": {
+            "summary": "The name of application.",
+            "required": false,
+            "default": "Simple Web Application"
         }
     }
+}
+```
 
 As we have updated the boilerplate, we must install it again:
 
@@ -167,7 +171,7 @@ SUCCESS Successfully generated project from 'python-web-app' boilerplate at 'D:\
 
 The generated ``main.py`` in project output directory has the following content:
 
-```
+```py
 import flask
 
 app = flask.Flask(__name__)
