@@ -41,8 +41,8 @@ web-app-template
 └── main.py
 ```
 
-We can initialize this directory as a Prept repository by running the ``prept init``
-command in this directory::
+We can initialize this directory as a Prept boilerplate by running the ``prept init``
+command in this directory:
 
 ```sh
 $ prept init python-web-app

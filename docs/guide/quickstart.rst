@@ -50,7 +50,7 @@ To show this, below is an example Python web app template in a directory named
     ├── utils.py
     └── main.py
 
-We can initialize this directory as a Prept repository by running the ``prept init``
+We can initialize this directory as a Prept boilerplate by running the ``prept init``
 command in this directory::
 
     $ prept init python-web-app
