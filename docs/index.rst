@@ -33,6 +33,7 @@ the :ref:`cli` sections.
    guide/index
    cli
    api/index
+   changelog
 
 Indices and Searching
 ~~~~~~~~~~~~~~~~~~~~~

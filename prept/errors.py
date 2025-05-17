@@ -26,6 +26,11 @@ class PreptCLIError(PreptError, click.ClickException):
     """Exception class to aid errors related to CLI.
 
     This inherits both :class:`PreptError` and :class:`click.ClickException`.
+
+    .. versionchanged:: 0.2.0
+
+        Multi-line message and hint now support proper indentation formatting
+        in error output.
     """
     def __init__(self, message: str, hint: str | None = None) -> None:
         super().__init__(message)

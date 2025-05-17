@@ -356,6 +356,8 @@ class BoilerplateInfo:
         - ``none``: Disable variables input. With this set, variables can only be provided through
           the ``-V`` option. If user fails to provide required variables through -V, then error is
           thrown.
+
+        .. versionadded:: 0.2.0
         """
         return self._variable_input_mode
 
