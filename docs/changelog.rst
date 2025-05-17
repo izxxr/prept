@@ -15,6 +15,10 @@ v0.2.0
 
 - :class:`PreptCLIError` now supports proper indentation formatting of multiline error message and hint. 
 
+**Fixes**
+
+- Fix :attr:`~BoilerplateInfo.allow_extra_variables` not having any effect.
+
 v0.1.0
 ~~~~~~
 

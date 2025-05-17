@@ -96,7 +96,7 @@ class BoilerplateInfo:
         }
         invalid = set(resolved).difference(self.template_variables)
 
-        if invalid:
+        if invalid and not self.allow_extra_variables:
             raise PreptCLIError(f'Invalid template variables provided: {", ".join(invalid)}')
 
         if self._variable_input_mode == 'none' or self._variable_input_mode == 'optional_only':
