@@ -11,9 +11,10 @@ v0.2.0
 
 - Add :attr:`~BoilerplateInfo.variable_input_mode` option to change behaviour of variables input prompt.
 
-**Enhancements**
+**Enhancements and Changes**
 
 - :class:`PreptCLIError` now supports proper indentation formatting of multiline error message and hint. 
+- :meth:`TemplateProvider.render` has been renamed to :meth:`TemplateProvider.process_content`
 
 **Fixes**
 

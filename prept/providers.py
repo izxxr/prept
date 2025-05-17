@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, ClassVar
 from types import ModuleType
-from prept.context import GenerationContext
 from prept.errors import TemplateProviderNotFound, InvalidConfig, PreptCLIError
 
 import string
@@ -21,6 +20,7 @@ _JINJA2_INSTALLED = jinja2 is not None
 
 if TYPE_CHECKING:
     from prept.context import GenerationContext
+    from prept.file import BoilerplateFile
 
 __all__ = (
     'resolve_template_provider',
@@ -162,7 +162,7 @@ class TemplateProvider:
     variables.
 
     All template providers, external or provided by Prept, inherit from
-    this class and implement the :meth:`.render` method. All providers
+    this class and implement the :meth:`.process_content` method. All providers
     must also set the :attr:`.name` class attribute.
 
     Prept provides the following built-in template providers:
@@ -186,16 +186,18 @@ class TemplateProvider:
     # See this SO question: https://stackoverflow.com/q/11461356
     __prept_template_provider__ = True
 
-    def render(self, context: GenerationContext) -> str | bytes:
-        """Renders the template.
+    def process_content(self, file: BoilerplateFile, context: GenerationContext) -> str | bytes:
+        """Processes the file content and inject variables into it.
 
-        This returns the file content generated from template in
-        textual (string) or binary (bytes) format.
+        This returns the processed file content generated from template
+        in textual (string) or binary (bytes) format.
 
         Parameters
         ~~~~~~~~~~
+        file: :class:`BoilerplateFile`
+            The file to be processed.
         context: :class:`GenerationContext`
-            The generation context containing generation-time and file information.
+            The generation context containing generation time information.
         """
         raise NotImplementedError
 
@@ -204,15 +206,15 @@ class StringTemplateProvider(TemplateProvider):
     """$-substitutions based templates by :class:`string.Template`.
 
     This uses :meth:`string.Template.safe_substitute()` to ensure that any invalid
-    or missing variables are silently ignored at render time.
+    or missing variables are silently ignored at generation time.
 
     This is identified by the ``stringsub`` name.
     """
 
     name = 'stringsub'
 
-    def render(self, context: GenerationContext) -> str:
-        content = context.current_file.read()
+    def process_content(self, file: BoilerplateFile, context: GenerationContext) -> str | bytes:
+        content = file.read()
         return string.Template(content).safe_substitute(context.variables)
 
 
@@ -255,10 +257,10 @@ class Jinja2TemplateProvider(TemplateProvider):
 
     name = 'jinja2'
 
-    def render(self, context: GenerationContext) -> str | bytes:
+    def process_content(self, file: BoilerplateFile, context: GenerationContext) -> str | bytes:
         assert jinja2 is not None  # this never fails
         
-        src = context.current_file.read()
+        src = file.read()
         temp = jinja2.Template(src)
         
         return temp.render(context.variables)

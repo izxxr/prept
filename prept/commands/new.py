@@ -121,7 +121,7 @@ def new(
         if boilerplate._is_template_file(file) and boilerplate.template_provider is not None:
             click.echo(outputs.cli_msg('', f'├── Applying template on {output.name / file} ... '), nl=False)
 
-            content = boilerplate.template_provider().render(genctx)
+            content = boilerplate.template_provider().process_content(genctx.current_file, genctx)
             with open(output / file, 'wb' if isinstance(content, bytes) else 'w') as f:
                 f.write(content)
 
