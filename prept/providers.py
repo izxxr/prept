@@ -8,6 +8,7 @@ from prept.errors import TemplateProviderNotFound, InvalidConfig, PreptCLIError
 
 import string
 import sys
+import pathlib
 import importlib.util
 import importlib.machinery
 
@@ -162,8 +163,8 @@ class TemplateProvider:
     variables.
 
     All template providers, external or provided by Prept, inherit from
-    this class and implement the :meth:`.process_content` method. All providers
-    must also set the :attr:`.name` class attribute.
+    this class and implement the :meth:`.process_content` and :meth:`.process_path`
+    methods. All providers must also set the :attr:`.name` class attribute.
 
     Prept provides the following built-in template providers:
 
@@ -185,6 +186,21 @@ class TemplateProvider:
     # properly due to separate class objects being created.
     # See this SO question: https://stackoverflow.com/q/11461356
     __prept_template_provider__ = True
+
+    def process_path(self, path: pathlib.Path, context: GenerationContext) -> pathlib.Path:
+        """"Processes the given path and replaces the.
+
+        This returns the :class:`pathlib.Path` object representing
+        the processed path.
+
+        Parameters
+        ~~~~~~~~~~
+        path: :class:`pathlib.Path`
+            The path to process.
+        context: :class:`GenerationContext`
+            The generation context containing generation time information.
+        """
+        raise NotImplementedError
 
     def process_content(self, file: BoilerplateFile, context: GenerationContext) -> str | bytes:
         """Processes the file content and inject variables into it.
@@ -212,6 +228,10 @@ class StringTemplateProvider(TemplateProvider):
     """
 
     name = 'stringsub'
+
+    def process_path(self, path: pathlib.Path, context: GenerationContext) -> pathlib.Path:
+        updated = string.Template(str(path)).safe_substitute(context.variables)
+        return pathlib.Path(updated)
 
     def process_content(self, file: BoilerplateFile, context: GenerationContext) -> str | bytes:
         content = file.read()
@@ -257,8 +277,14 @@ class Jinja2TemplateProvider(TemplateProvider):
 
     name = 'jinja2'
 
-    def process_content(self, file: BoilerplateFile, context: GenerationContext) -> str | bytes:
+    def process_path(self, path: pathlib.Path, context: GenerationContext) -> pathlib.Path:
         assert jinja2 is not None  # this never fails
+        temp = jinja2.Template(str(path))
+
+        return pathlib.Path(temp.render(context.variables))
+
+    def process_content(self, file: BoilerplateFile, context: GenerationContext) -> str | bytes:
+        assert jinja2 is not None
         
         src = file.read()
         temp = jinja2.Template(src)

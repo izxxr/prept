@@ -4,12 +4,13 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from prept.errors import PreptError
+from prept.errors import PreptError, PreptCLIError
 from prept.cli import outputs
 from prept.cli.params import BOILERPLATE
 
 import click
 import shutil
+import traceback
 import os
 import pathlib
 
@@ -99,33 +100,56 @@ def new(
         output=output,
         variables=variables,
     )
+    tp = boilerplate.template_provider() if boilerplate.template_provider else None
 
     for file in boilerplate._get_generated_files():
         bp_file = boilerplate.path / file
-        output_dir = output / os.path.dirname(file)
-
-        click.echo(outputs.cli_msg('', f'├── Creating {output.name / file} ... '), nl=False)
+        output_file = output / file
 
         genctx._set_current_file(file.name, bp_file)
         assert genctx._current_file is not None
 
+        if tp and boilerplate._is_template(file, path=True):
+            click.echo(outputs.cli_msg('', f'├── Processing template path {output_file} ... '), nl=False)
+            try:
+                output_file = tp.process_path(pathlib.Path(output_file), genctx)
+            except Exception as e:
+                click.secho('ERROR', fg='red')
+                if isinstance(e, PreptCLIError):
+                    raise
+
+                click.echo()
+                raise PreptCLIError(f'An error occured while processing template path {output_file}:\n{traceback.format_exc()}')
+            else:
+                click.secho('DONE', fg='green')
+
+        click.echo(outputs.cli_msg('', f'├── Creating {output_file} ... '), nl=False)
+
         try:
-            os.makedirs(output_dir, exist_ok=True)
-            shutil.copy(bp_file, output_dir)
+            os.makedirs(os.path.dirname(output_file), exist_ok=True)
+            shutil.copy2(bp_file, output_file)
         except Exception:
             click.secho('ERROR', fg='red')
-            raise PreptError(f'Failed to copy boilerplate file {bp_file} to installation directory at {output / file}')
+            raise PreptError(f'Failed to copy boilerplate file {bp_file} to installation directory at {output_file}')
 
         click.secho('DONE', fg='green')
 
-        if boilerplate._is_template_file(file) and boilerplate.template_provider is not None:
-            click.echo(outputs.cli_msg('', f'├── Applying template on {output.name / file} ... '), nl=False)
+        if boilerplate._is_template(file) and tp is not None:
+            click.echo(outputs.cli_msg('', f'├── Processing template content {output_file} ... '), nl=False)
+            try:
+                content = tp.process_content(genctx.current_file, genctx)
+            except Exception as e:
+                click.secho('ERROR', fg='red')
+                if isinstance(e, PreptCLIError):
+                    raise
 
-            content = boilerplate.template_provider().process_content(genctx.current_file, genctx)
-            with open(output / file, 'wb' if isinstance(content, bytes) else 'w') as f:
+                click.echo()
+                raise PreptCLIError(f'An error occured while processing template content of {output_file}:\n{traceback.format_exc()}')
+            else:
+                click.secho('DONE', fg='green')
+
+            with open(output_file, 'wb' if isinstance(content, bytes) else 'w') as f:
                 f.write(content)
-
-            click.secho('DONE', fg='green')
 
     click.echo()
     outputs.echo_success(f'Successfully generated project from {boilerplate.name!r} boilerplate at \'{output.absolute()}\'')
