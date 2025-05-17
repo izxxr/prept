@@ -50,7 +50,7 @@ To show this, below is an example Python web app template in a directory named
     ├── utils.py
     └── main.py
 
-We can initialize this directory as a Prept boilerplate by running the ``prept init``
+We can initialize this directory as a Prept boilerplate by running the :program:`prept init`
 command in this directory::
 
     $ prept init python-web-app
@@ -77,7 +77,7 @@ This command creates a boilerplate configuration file ``preptconfig.json``::
 Generating Project
 ~~~~~~~~~~~~~~~~~~
 
-We can now use ``prept new`` command supplying this directory's path as argument
+We can now use :program:`prept new` command supplying this directory's path as argument
 along with output directory to bootstrap a project from this boilerplate.
 
 The following command is ran in directory where ``web-app-template`` directory is
@@ -97,7 +97,7 @@ Repeatedly using paths such as ``.\web-app-template`` is not practical in most c
 would want to have a way of generating project from this boilerplate by simply referring to its
 name.
 
-This can be achieved by globally installing the boilerplate through ``prept install`` command. This
+This can be achieved by globally installing the boilerplate through :program:`prept install` command. This
 command takes the boilerplate path as argument which is to be installed.
 
 The following command is ran in ``web-app-template`` boilerplate directory::
@@ -109,7 +109,7 @@ The following command is ran in ``web-app-template`` boilerplate directory::
 .. image:: ../_assets/prept_install.gif
     :alt: Usage of prept install command
 
-We can now use ``prept new python-web-app`` command anywhere to quickly generate
+We can now use :program:`prept new python-web-app` command anywhere to quickly generate
 project from this boilerplate!
 
 .. image:: ../_assets/prept_new_installed.gif
@@ -117,7 +117,7 @@ project from this boilerplate!
 
 .. tip::
 
-    You can use ``prept uninstall`` to uninstall a boilerplate and ``prept list``
+    You can use :program:`prept uninstall` to uninstall a boilerplate and :program:`prept list`
     to see the list of installed boilerplates.
 
 Template Files
@@ -183,10 +183,10 @@ updated configuration::
 
 .. note::
 
-    As we have updated the boilerplate, we must install it again through ``prept install``
+    As we have updated the boilerplate, we must install it again through :program:`prept install`
     command if it was previously installed to reflect the changes in global installation.
 
-We can now run ``prept new`` command and provide the value for ``APP_NAME`` variable
+We can now run :program:`prept new` command and provide the value for ``APP_NAME`` variable
 for it to be injected into ``main.py``.
 
 .. code-block:: sh

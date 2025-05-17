@@ -121,7 +121,7 @@ value of ``APP_NAME`` variable. Input value will be injected into the template f
 
     SUCCESS Successfully generated project from 'basic-boilerplate' boilerplate at 'D:\Projects\my-app'
 
-Alternatively, we can pass the value of variables through :option:`prept new -V` or :option:`prept new --var`
+Alternatively, we can pass the value of variables through :option:`-V <prept new -V>` or :option:`--var <prept new --var>`
 option which takes two values: the variable name and its value. For example::
 
     $ prept new basic-boilerplate -O ./basic_project -V APP_NAME "Chat Application"
@@ -286,22 +286,22 @@ for injecting variable values into template files.
 Variables Input
 ~~~~~~~~~~~~~~~
 
-There are two modes of providing variable while generating boilerplates: through the :option:`prept new -V` option, or through
-the input prompts in :program:`prept new` command output.
+There are two modes of providing variable while generating boilerplates: through the :option:`prept new -V` option, or
+through the input prompts in :program:`prept new` command output.
 
-By default, Prept will prompt the user to input variables that were not provided through the :option:`prept new -V` option. This
-behaviour can be changed using the ``variable_input_mode`` setting. It can take three values:
+By default, Prept will prompt the user to input variables that were not provided through the :option:`-V <prept new -V>`
+option. This behaviour can be changed using the ``variable_input_mode`` setting. It can take three values:
 
 - ``all`` (default)
 - ``required_only``
 - ``none``
 
 ``all`` is the default value and with this set, Prept will prompt the user to input all variables that
-were not provided by :option:`prept new -V` option regardless of whether the variable is required or not.
+were not provided by :option:`-V <prept new -V>` option regardless of whether the variable is required or not.
 
 With ``required_only``, the user is prompted to only input the required variables. Optional variables
-can only be set through :option:`prept new -V` option.
+can only be set through :option:`-V <prept new -V>` option.
 
 ``none`` completely disables variables input prompt. With this setting, all variable values should
-be provided through :option:`prept new -V` option. If there are required variables, they must be provided
-using :option:`prept new -V` otherwise an error is raised by :program:`prept prept new`.
+be provided through :option:`-V <prept new -V>` option. If there are required variables, they must be provided
+using :option:`-V <prept new -V>` otherwise an error is raised by :program:`prept new`.

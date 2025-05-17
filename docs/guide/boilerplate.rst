@@ -12,7 +12,7 @@ Configuration File
 ------------------
 
 Each boilerplate has a configuration file which is generated when the boilerplate is initialized
-through the ``prept init`` command. This is the ``preptconfig.json`` file. This file contains
+through the :program:`prept init` command. This is the ``preptconfig.json`` file. This file contains
 all the options used to customize the boilerplate.
 
 The only required setting right now in this file is ``name`` which represents the name
@@ -74,7 +74,7 @@ Default Generation Directory
 ----------------------------
 
 ``default_generation_directory`` is the name of directory where generated source files
-are place if user does not provide any output path through ``-O`` option in prept ``prept new``.
+are place if user does not provide any output path through :option:`prept new -O` option.
 
 By default, the boilerplate's name is used as ``default_generation_directory`` at generation time.
 
