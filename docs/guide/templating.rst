@@ -290,18 +290,19 @@ There are two modes of providing variable while generating boilerplates: through
 through the input prompts in :program:`prept new` command output.
 
 By default, Prept will prompt the user to input variables that were not provided through the :option:`-V <prept new -V>`
-option. This behaviour can be changed using the ``variable_input_mode`` setting. It can take three values:
+option. This behaviour can be changed using the ``variable_input_mode`` setting. It can take the following values:
 
 - ``all`` (default)
 - ``required_only``
+- ``optional_only``
 - ``none``
 
 ``all`` is the default value and with this set, Prept will prompt the user to input all variables that
 were not provided by :option:`-V <prept new -V>` option regardless of whether the variable is required or not.
 
-With ``required_only``, the user is prompted to only input the required variables. Optional variables
-can only be set through :option:`-V <prept new -V>` option.
+With ``required_only`` and ``optional_only``, the user is prompted to only input the required and optional
+variables respectively. ``none`` completely disables variables input prompt.
 
-``none`` completely disables variables input prompt. With this setting, all variable values should
-be provided through :option:`-V <prept new -V>` option. If there are required variables, they must be provided
-using :option:`-V <prept new -V>` otherwise an error is raised by :program:`prept new`.
+In each case, the variables that are not taken through input should be provided through :option:`-V <prept new -V>`
+option. Specifically, with ``optional_only`` and ``none`` setting, required variables **must** be provided through
+:option:`-V <prept new V>` otherwise an error is thrown.

@@ -22,7 +22,7 @@ __all__ = (
     'BoilerplateInfo',
 )
 
-VariableInputModeT = Literal['all', 'required_only', 'none']
+VariableInputModeT = Literal['all', 'required_only', 'optional_only', 'none']
 
 PATTERN_BOILERPLATE_NAME = re.compile(r'^[A-Za-z_][A-Za-z0-9_-]*$')
 DEFAULT_IGNORED_PATHS = {'preptconfig.json'}
@@ -99,7 +99,7 @@ class BoilerplateInfo:
         if invalid:
             raise PreptCLIError(f'Invalid template variables provided: {", ".join(invalid)}')
 
-        if self.variable_input_mode == 'none':
+        if self._variable_input_mode == 'none' or self._variable_input_mode == 'optional_only':
             missing = [v.name for v in self.template_variables.values() if v.name not in resolved and v.required]
             if missing:
                 raise PreptCLIError(
@@ -109,9 +109,15 @@ class BoilerplateInfo:
                         f'Use "prept info {self.name if self._installed else self.path}" for more information about these variables.'
                     )
                 )
-            return resolved
+            if self._variable_input_mode == 'none':
+                return resolved
 
         for var_name, var in self.template_variables.items():
+            # At this point, if variable_input_mode=optional_only, then resolved should
+            # have all values for all required variables as we have validated for missing
+            # required variables already above. So we don't have to perform any additional
+            # checks here for optional_only mode as this if condition already skips provided
+            # variables. 
             if var_name in resolved:
                 continue
             if not var.required and self.variable_input_mode == 'required_only':
@@ -350,12 +356,12 @@ class BoilerplateInfo:
         There are three possible values:
 
         - ``all`` (default): Prompt input for all variables, including required and optional.
-        
         - ``required_only``: Prompt input for only required variables.
+        - ``optional_only``: Prompt input for only optional variables.
+        - ``none``: Disable variables input.
 
-        - ``none``: Disable variables input. With this set, variables can only be provided through
-          the ``-V`` option. If user fails to provide required variables through -V, then error is
-          thrown.
+        In the case of ``optional_only`` and ``none``, required variables must be provided
+        using the :option:`prept new -V` option otherwise an error is raised.
 
         .. versionadded:: 0.2.0
         """
