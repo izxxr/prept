@@ -313,7 +313,7 @@ Template Paths
 There are cases when you want to inject template variables into a file or directory name. For example, there
 may be a directory in your boilerplate that is named after the application's name which is provided by user.
 
-Like :attr:`~BoilerplateInfo.template_files`, we also have :attr:`~BoilerplateInfo.template_names` which are path
+Like :attr:`~BoilerplateInfo.template_files`, we also have :attr:`~BoilerplateInfo.template_paths` which are path
 (or roughly speaking file or directory names) that are treated as templates.
 
 Consider the following boilerplate directory structure::
@@ -337,7 +337,7 @@ We define the following boilerplate configuration in preptconfig.json::
 
     {
         "name": "python-web-app",
-        "template_names": [
+        "template_paths": [
             "$APP_NAME"
         ],
         "template_provider": "stringsub",
