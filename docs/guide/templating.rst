@@ -307,6 +307,8 @@ In each case, the variables that are not taken through input should be provided 
 option. Specifically, with ``optional_only`` and ``none`` setting, required variables **must** be provided through
 :option:`-V <prept new V>` otherwise an error is thrown.
 
+.. _guide-templating--template-paths:
+
 Template Paths
 --------------
 
