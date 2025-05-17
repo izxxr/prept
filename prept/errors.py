@@ -33,8 +33,22 @@ class PreptCLIError(PreptError, click.ClickException):
         self.hint = hint
 
     def format_message(self) -> str:
-        message = outputs.cli_msg('ERROR', self.message, prefix_opts={'fg': 'red'})
-        hint = outputs.cli_msg('INFO', self.hint, prefix_opts={'fg': 'blue'}) if self.hint else ''
+        message_lines = self.message.splitlines()
+        if not message_lines:
+            return ''
+
+        message = outputs.cli_msg('ERROR', message_lines.pop(0), prefix_opts={'fg': 'red'})
+        for line in message_lines:
+            message += '\n' + outputs.cli_msg('', line)
+
+        hint_lines = self.hint.splitlines() if self.hint else []
+        if not hint_lines:
+            return message
+
+        hint = outputs.cli_msg('INFO', hint_lines.pop(0), prefix_opts={'fg': 'blue'})
+        for line in hint_lines:
+            hint += '\n' + outputs.cli_msg('', line)
+
         return "\n".join((message, hint)).strip()
 
     def show(self, file: IO[Any] | None = None) -> None:

@@ -95,7 +95,7 @@ This defines all files in ``src`` directory as template along with the main.py f
 Generating Project
 ~~~~~~~~~~~~~~~~~~
 
-With the configuration shown above, we can run ``prept new`` and we will be prompted to enter the
+With the configuration shown above, we can run :program:`prept new` and we will be prompted to enter the
 value of ``APP_NAME`` variable. Input value will be injected into the template files in generated project.
 
 .. code-block:: text
@@ -121,8 +121,8 @@ value of ``APP_NAME`` variable. Input value will be injected into the template f
 
     SUCCESS Successfully generated project from 'basic-boilerplate' boilerplate at 'D:\Projects\my-app'
 
-Alternatively, we can pass the value of variables through ``-V`` o ``--var`` option which takes
-two values: the variable name and its value. For example::
+Alternatively, we can pass the value of variables through :option:`prept new -V` or :option:`prept new --var`
+option which takes two values: the variable name and its value. For example::
 
     $ prept new basic-boilerplate -O ./basic_project -V APP_NAME "Chat Application"
 
@@ -265,7 +265,7 @@ determined as ``false`` regardless of the value set to it. Variable with default
 Arbitrary Variables
 ~~~~~~~~~~~~~~~~~~~
 
-By default, Prept forbids passing invalid variables through the ``-V`` option. However, this
+By default, Prept forbids passing invalid variables through the :option:`prept new -V` option. However, this
 can be allowed by setting :attr:`~BoilerplateInfo.allow_extra_variables` to true on boilerplate
 configuration.
 
@@ -282,3 +282,26 @@ configuration.
 
 The extra variables' values are added to the :attr:`GenerationContext.variables` mapping used
 for injecting variable values into template files.
+
+Variables Input
+~~~~~~~~~~~~~~~
+
+There are two modes of providing variable while generating boilerplates: through the :option:`prept new -V` option, or through
+the input prompts in :program:`prept new` command output.
+
+By default, Prept will prompt the user to input variables that were not provided through the :option:`prept new -V` option. This
+behaviour can be changed using the ``variable_input_mode`` setting. It can take three values:
+
+- ``all`` (default)
+- ``required_only``
+- ``none``
+
+``all`` is the default value and with this set, Prept will prompt the user to input all variables that
+were not provided by :option:`prept new -V` option regardless of whether the variable is required or not.
+
+With ``required_only``, the user is prompted to only input the required variables. Optional variables
+can only be set through :option:`prept new -V` option.
+
+``none`` completely disables variables input prompt. With this setting, all variable values should
+be provided through :option:`prept new -V` option. If there are required variables, they must be provided
+using :option:`prept new -V` otherwise an error is raised by :program:`prept prept new`.

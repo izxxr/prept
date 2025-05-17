@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Iterator
+from typing import Any, Iterator, Literal, get_args
 from typing_extensions import Self
 from packaging.version import Version, InvalidVersion
 from prept.errors import InvalidConfig, ConfigNotFound, BoilerplateNotFound, PreptCLIError
@@ -22,9 +22,11 @@ __all__ = (
     'BoilerplateInfo',
 )
 
+VariableInputModeT = Literal['all', 'required_only', 'none']
 
 PATTERN_BOILERPLATE_NAME = re.compile(r'^[A-Za-z_][A-Za-z0-9_-]*$')
 DEFAULT_IGNORED_PATHS = {'preptconfig.json'}
+VARIABLE_INPUT_MODES = set(get_args(VariableInputModeT))
 
 
 class BoilerplateInfo:
@@ -36,6 +38,7 @@ class BoilerplateInfo:
         self,
         name: str,
         path: pathlib.Path,
+        installed: bool = False,
         summary: str | None = None,
         version: Version | str | None = None,
         ignore_paths: list[str] | None = None,
@@ -44,8 +47,10 @@ class BoilerplateInfo:
         template_files: list[str] | None = None,
         template_variables: dict[str, dict[str, Any]] | None = None,
         allow_extra_variables: bool = False,
+        variable_input_mode: VariableInputModeT = 'all',
     ):
         self._path = path
+        self._installed = installed
         self.ignore_paths = ignore_paths or []
         self.name = name
         self.summary = summary
@@ -54,6 +59,7 @@ class BoilerplateInfo:
         self.template_provider = template_provider
         self.template_files = template_files
         self.allow_extra_variables = allow_extra_variables
+        self.variable_input_mode = variable_input_mode
 
         if template_variables is None:
             self.template_variables = {}
@@ -89,19 +95,37 @@ class BoilerplateInfo:
             for name, value in input_vars
         }
         invalid = set(resolved).difference(self.template_variables)
+
         if invalid:
             raise PreptCLIError(f'Invalid template variables provided: {", ".join(invalid)}')
+
+        if self.variable_input_mode == 'none':
+            missing = [v.name for v in self.template_variables.values() if v.name not in resolved and v.required]
+            if missing:
+                raise PreptCLIError(
+                    f'Missing required template variables: {", ".join(missing)}',
+                    hint=(
+                        'Use the -V option followed by variable name and value to provide these variables.\n' \
+                        f'Use "prept info {self.name if self._installed else self.path}" for more information about these variables.'
+                    )
+                )
+            return resolved
 
         for var_name, var in self.template_variables.items():
             if var_name in resolved:
                 continue
+            if not var.required and self.variable_input_mode == 'required_only':
+                if var.default is not None:
+                    resolved[var_name] = var.default
+                continue
+
             if var.summary:
                 click.echo(outputs.cli_msg(f'OPTION', var.summary, prefix_opts={'fg': 'cyan'}))
                 prompt = var.name
             else:
                 click.echo(outputs.cli_msg(f'OPTION', var.name, prefix_opts={'fg': 'cyan'}))
                 prompt = ''
-            
+
             prompt += ' (required)' if var.required else ' (optional)'
 
             if not var.required and var.default is None:
@@ -316,6 +340,32 @@ class BoilerplateInfo:
         
         self._allow_extra_variables = value
 
+    @property
+    def variable_input_mode(self) -> str:
+        """The mode of input of variables.
+
+        This determines the variables that are prompted to be input
+        after prept new is ran.
+
+        There are three possible values:
+
+        - ``all`` (default): Prompt input for all variables, including required and optional.
+        
+        - ``required_only``: Prompt input for only required variables.
+
+        - ``none``: Disable variables input. With this set, variables can only be provided through
+          the ``-V`` option. If user fails to provide required variables through -V, then error is
+          thrown.
+        """
+        return self._variable_input_mode
+
+    @variable_input_mode.setter
+    def variable_input_mode(self, value: VariableInputModeT) -> None:
+        if value not in VARIABLE_INPUT_MODES:
+            raise InvalidConfig('variable_input_mode', f'variable_input_mode can only take the values: {", ".join(VARIABLE_INPUT_MODES)} (got {value!r})')
+
+        self._variable_input_mode = value
+
     @classmethod
     def from_path(cls, path: pathlib.Path | str) -> Self:
         """Loads boilerplate information from its path.
@@ -350,6 +400,7 @@ class BoilerplateInfo:
 
         return cls(
             name=data['name'],
+            installed=False,
             path=path,
             summary=data.get('summary'),
             version=data.get('version'),
@@ -359,6 +410,7 @@ class BoilerplateInfo:
             template_files=data.get('template_files'),
             template_variables=data.get('template_variables'),
             allow_extra_variables=data.get('allow_extra_variables'),
+            variable_input_mode=data.get('variable_input_mode', 'all'),
         )
     
     @classmethod
@@ -384,7 +436,10 @@ class BoilerplateInfo:
         if not bp_dir.exists():
             raise BoilerplateNotFound(name)
         
-        return cls.from_path(bp_dir)
+        bp = cls.from_path(bp_dir)
+        bp._installed = True
+
+        return bp
 
     @classmethod
     def resolve(cls, value: Any) -> Self:
@@ -424,7 +479,7 @@ class BoilerplateInfo:
         The result is compatible with the preptconfig.json schema.
         """
         data: dict[str, Any] = {
-            "name": self._name,
+            'name': self._name,
         }
 
         if self._summary:
@@ -450,6 +505,9 @@ class BoilerplateInfo:
 
         if self._allow_extra_variables:
             data['allow_extra_variables'] = self.allow_extra_variables
+
+        if self.variable_input_mode != 'all':
+            data['variable_input_mode'] = self.variable_input_mode
 
         return data
 
