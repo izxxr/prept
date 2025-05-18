@@ -92,6 +92,8 @@ class BoilerplateInfo:
         return spec.match_file(file)
 
     def _resolve_variables(self, input_vars: list[tuple[str, str]]) -> dict[str, Any]:
+        outputs.echo_info('Processing template variables')
+
         resolved = {
             name: value
             for name, value in input_vars
@@ -145,7 +147,7 @@ class BoilerplateInfo:
 
             click.echo()
             value = click.prompt(
-                outputs.cli_msg('', prompt),
+                outputs.cli_msg(prompt),
                 default=default,
                 show_default=default is not utils.UNDEFINED,
                 value_proc=lambda v: v  # needed to prevent copying of undefined sentinel

@@ -31,7 +31,7 @@ def uninstall(ctx: click.Context, boilerplate: BoilerplateInfo):
     
     outputs.echo_warning(f'Boilerplate {boilerplate.name} {boilerplate.version or '\b'} will be uninstalled.')
 
-    if not click.confirm(outputs.cli_msg('', 'Do you wish to proceed?')):
+    if not click.confirm(outputs.cli_msg('Do you wish to proceed?')):
         outputs.echo_info('Aborted. No changes were made.')
         return
 
@@ -40,7 +40,7 @@ def uninstall(ctx: click.Context, boilerplate: BoilerplateInfo):
         shutil.rmtree(boilerplate.path)
     except Exception as e:
         outputs.echo_error('Failed to uninstall the boilerplate. Installation directory could not be removed.')
-        click.echo(outputs.cli_msg('', 'The following error occured:'))
-        click.echo(outputs.cli_msg('', str(e)))
+        click.echo(outputs.cli_msg('The following error occured:'))
+        click.echo(outputs.cli_msg(str(e)))
     else:
         outputs.echo_success(f'Successfully uninstalled {boilerplate.name} {boilerplate.version or '\b'} boilerplate.')
