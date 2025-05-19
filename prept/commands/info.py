@@ -25,7 +25,7 @@ def info(
 ):
     """Shows information about a boilerplate.
     
-    ``BOILERPLATE`` is either path to a boilerplate directory (containing preptconfig.json)
+    BOILERPLATE is either path to a boilerplate directory (containing preptconfig.json)
     or name of an installed boilerplate.
     """
     click.echo(f'\n{boilerplate.name}\n{"-" * len(boilerplate.name)}\n')

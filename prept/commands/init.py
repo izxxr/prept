@@ -23,7 +23,7 @@ def init(ctx: click.Context, name: str):
     This command simply creates a preptconfig.json configuration file in
     the working directory.
 
-    ``NAME`` is the boilerplate name and must pass following set of rules:
+    NAME is the boilerplate name and must pass following set of rules:
 
     - Consists of alphanumeric, hyphens, and underscores characters.
     - Must begin with a letter or underscore.
