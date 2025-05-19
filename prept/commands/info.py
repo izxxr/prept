@@ -32,4 +32,9 @@ def info(
     click.echo(f'Summary: {boilerplate.summary or "N/A"}')
     click.echo(f'Version: {boilerplate.version or "N/A"}')
     click.echo(f'Configuration: {(boilerplate.path / "preptconfig.json").absolute()}')
+    click.echo(f'Variables:')
+
+    for var in boilerplate.template_variables.values():
+        click.echo(f'  - {var.name} {f"(required)" if var.required else "\b"}: {var.summary}')
+
     click.echo()

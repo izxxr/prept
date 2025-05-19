@@ -16,6 +16,7 @@ v0.2.0
 
 - :class:`PreptCLIError` now supports proper indentation formatting of multiline error message and hint
 - :meth:`TemplateProvider.render` has been renamed to :meth:`TemplateProvider.process_content`
+- :program:`prept info` now shows the basic details (name, required/optional, summary) of template variables
 
 **Fixes**
 
