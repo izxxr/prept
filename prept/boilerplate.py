@@ -45,6 +45,7 @@ class BoilerplateInfo:
         default_generate_directory: str | None = None,
         template_provider: str | None = None,
         template_files: list[str] | None = None,
+        template_paths: list[str] | None = None,
         template_variables: dict[str, dict[str, Any]] | None = None,
         allow_extra_variables: bool = False,
         variable_input_mode: VariableInputModeT = 'all',
@@ -58,6 +59,7 @@ class BoilerplateInfo:
         self.default_generate_directory = default_generate_directory
         self.template_provider = template_provider
         self.template_files = template_files
+        self.template_paths = template_paths
         self.allow_extra_variables = allow_extra_variables
         self.variable_input_mode = variable_input_mode
 
@@ -85,11 +87,13 @@ class BoilerplateInfo:
     def _get_generation_context(self, output: pathlib.Path, variables: dict[str, Any]) -> GenerationContext:
         return GenerationContext(boilerplate=self, output_dir=output, variables=variables)
 
-    def _is_template_file(self, file: pathlib.Path) -> bool:
-        spec = pathspec.PathSpec.from_lines('gitwildmatch', self.template_files)
-        return spec.match_file((self.path / file).relative_to(self.path))
+    def _is_template(self, file: pathlib.Path, path: bool = False) -> bool:
+        spec = pathspec.PathSpec.from_lines('gitwildmatch', self.template_paths if path else self.template_files)
+        return spec.match_file(file)
 
     def _resolve_variables(self, input_vars: list[tuple[str, str]]) -> dict[str, Any]:
+        outputs.echo_info('Processing template variables')
+
         resolved = {
             name: value
             for name, value in input_vars
@@ -143,7 +147,7 @@ class BoilerplateInfo:
 
             click.echo()
             value = click.prompt(
-                outputs.cli_msg('', prompt),
+                outputs.cli_msg(prompt),
                 default=default,
                 show_default=default is not utils.UNDEFINED,
                 value_proc=lambda v: v  # needed to prevent copying of undefined sentinel
@@ -329,6 +333,30 @@ class BoilerplateInfo:
         self._template_files = value
 
     @property
+    def template_paths(self) -> list[str]:
+        """The paths which are treated as templates.
+
+        These paths are passed to template provider's :meth:`~TemplateProvider.process_path`
+        method and all file name or directory names are processed, injecting any variable
+        values where placeholders are present.
+
+        This is not the same as :attr:`.template_files` which are the files whose
+        **content** is processed, not path.
+
+        .. versionadded:: 0.2.0
+        """
+        return self._template_paths
+
+    @template_paths.setter
+    def template_paths(self, value: list[str] | None) -> None:
+        if value is None:
+            value = []
+        if list(filter(lambda v: not isinstance(v, str), value)):
+            raise InvalidConfig('template_paths', 'template_paths cannot contain non-string entries')
+
+        self._template_paths = value
+
+    @property
     def allow_extra_variables(self) -> bool:
         """Whether arbitrary variables that are not in template_variables are allowed.
 
@@ -416,6 +444,7 @@ class BoilerplateInfo:
             default_generate_directory=data.get('default_generate_directory'),
             template_provider=data.get('template_provider'),
             template_files=data.get('template_files'),
+            template_paths=data.get('template_paths'),
             template_variables=data.get('template_variables'),
             allow_extra_variables=data.get('allow_extra_variables'),
             variable_input_mode=data.get('variable_input_mode', 'all'),
@@ -506,7 +535,10 @@ class BoilerplateInfo:
             data['template_provider'] = self._template_provider
 
         if self._template_files:
-            data['ignore_paths'] = self._ignore_paths
+            data['template_files'] = self._template_files
+
+        if self._template_paths:
+            data['template_paths'] = self._template_paths
 
         if self.template_variables:
             data['template_variables'] = {v.name: v._dump() for v in self.template_variables.values()}

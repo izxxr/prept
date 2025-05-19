@@ -4,8 +4,8 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from prept.errors import PreptError
 from prept.cli import outputs
+from prept.cli.status import StatusUpdate
 from prept.cli.params import BOILERPLATE
 
 import click
@@ -19,6 +19,36 @@ if TYPE_CHECKING:
 __all__ = (
     'new',
 )
+
+
+def _get_output_directory(bp: BoilerplateInfo, output: pathlib.Path | None) -> pathlib.Path | None:
+    outputs.echo_info(f'Generating project from boilerplate: {bp.name}')
+
+    if output is None:
+        output = pathlib.Path(bp.default_generate_directory)
+
+    out_abs = output.absolute()  # for outputs
+    if not output.exists():
+        outputs.echo_info(f'No existing directory found. Creating project directory at \'{out_abs}\'')
+        try:
+            output.mkdir()
+        except Exception as e:
+            raise outputs.wrap_exception(
+                e,
+                'Project directory creation failed with following error:',
+                'Ensure proper permissions are granted to create directory at given path',
+            ) from None
+        else:
+            outputs.echo_info(f'Successfully created project directory at {out_abs}')
+    else:
+        outputs.echo_warning(f'Directory \'{output.absolute()}\' already exists!')
+        click.echo(outputs.cli_msg('Previous content that can be overwritten will be lost if you proceed.'))
+
+        if not click.confirm(outputs.cli_msg('Do you wish to overwrite existing directory content?')):
+            outputs.echo_info('Exited without making any changes.')
+            return
+        
+    return output
 
 @click.command()
 @click.pass_context
@@ -65,67 +95,52 @@ def new(
     ``BOILERPLATE`` is the name or path of boilerplate (containing preptconfig.json) to
     generate the project from.
     """
-    outputs.echo_info(f'Generating project from boilerplate: {boilerplate.name}')
-
+    output = _get_output_directory(boilerplate, output)
     if output is None:
-        output = pathlib.Path(boilerplate.default_generate_directory)
+        return
 
-    out_abs = output.absolute()  # for outputs
-    if not output.exists():
-        outputs.echo_info(f'No existing directory found. Creating project directory at \'{out_abs}\'')
-        try:
-            output.mkdir()
-        except Exception as e:
-            outputs.echo_error(f'({e.__class__.__name__}) {e}')
-            outputs.echo_error(f'Failed to create project directory, aborting.')
-            return
-        else:
-            outputs.echo_info(f'Successfully created project directory at {out_abs}')
-    else:
-        outputs.echo_warning(f'Directory \'{output.absolute()}\' already exists!')
-        click.echo(outputs.cli_msg('', 'Previous content that can be overwritten will be lost if you proceed.'))
-
-        if not click.confirm(outputs.cli_msg('', 'Do you wish to overwrite existing directory content?')):
-            outputs.echo_info('Exited without making any changes.')
-            return
-
-    outputs.echo_info('Processing template variables')
     variables = boilerplate._resolve_variables(var or [])
-
-    outputs.echo_info(f'Creating project files at \'{out_abs}\'')
-    click.echo()
-
     genctx = boilerplate._get_generation_context(
         output=output,
         variables=variables,
     )
+    tp = boilerplate.template_provider() if boilerplate.template_provider else None
+
+    outputs.echo_info(f'Creating project files at \'{output.absolute()}\'')
+    click.echo()
 
     for file in boilerplate._get_generated_files():
         bp_file = boilerplate.path / file
-        output_dir = output / os.path.dirname(file)
-
-        click.echo(outputs.cli_msg('', f'├── Creating {output.name / file} ... '), nl=False)
+        output_file = output / file
 
         genctx._set_current_file(file.name, bp_file)
         assert genctx._current_file is not None
 
-        try:
-            os.makedirs(output_dir, exist_ok=True)
-            shutil.copy(bp_file, output_dir)
-        except Exception:
-            click.secho('ERROR', fg='red')
-            raise PreptError(f'Failed to copy boilerplate file {bp_file} to installation directory at {output / file}')
+        if tp and boilerplate._is_template(file, path=True):
+            with StatusUpdate(
+                outputs.cli_msg(f'├── Processing template path {output_file}'),
+                error_message=f'An error occured while processing template path {output_file}:'
+            ):
+                output_file = tp.process_path(pathlib.Path(output_file), genctx)
 
-        click.secho('DONE', fg='green')
+        with StatusUpdate(
+            outputs.cli_msg(f'├── Creating {output_file}'),
+            error_message=f'Copying of {bp_file} to installation directory at {output_file} failed with following error:',
+        ):
+            os.makedirs(os.path.dirname(output_file), exist_ok=True)
+            shutil.copy2(bp_file, output_file)
 
-        if boilerplate._is_template_file(file) and boilerplate.template_provider is not None:
-            click.echo(outputs.cli_msg('', f'├── Applying template on {output.name / file} ... '), nl=False)
+        if boilerplate._is_template(file) and tp is not None:
+            with StatusUpdate(
+                outputs.cli_msg(f'├── Processing template content {output_file}'),
+                error_message=f'An error occured while processing template content of {output_file}:'
+            ):
+                content = tp.process_content(genctx.current_file, genctx)
 
-            content = boilerplate.template_provider().process_content(genctx.current_file, genctx)
-            with open(output / file, 'wb' if isinstance(content, bytes) else 'w') as f:
-                f.write(content)
+            mode = 'wb' if isinstance(content, bytes) else 'w'
 
-            click.secho('DONE', fg='green')
+            with open(output_file, mode) as f:
+                f.write(content)  # type: ignore
 
     click.echo()
     outputs.echo_success(f'Successfully generated project from {boilerplate.name!r} boilerplate at \'{output.absolute()}\'')

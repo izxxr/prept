@@ -306,3 +306,65 @@ variables respectively. ``none`` completely disables variables input prompt.
 In each case, the variables that are not taken through input should be provided through :option:`-V <prept new -V>`
 option. Specifically, with ``optional_only`` and ``none`` setting, required variables **must** be provided through
 :option:`-V <prept new V>` otherwise an error is thrown.
+
+.. _guide-templating--template-paths:
+
+Template Paths
+--------------
+
+There are cases when you want to inject template variables into a file or directory name. For example, there
+may be a directory in your boilerplate that is named after the application's name which is provided by user.
+
+Like :attr:`~BoilerplateInfo.template_files`, we also have :attr:`~BoilerplateInfo.template_paths` which are path
+(or roughly speaking file or directory names) that are treated as templates.
+
+Consider the following boilerplate directory structure::
+
+    python-web-app
+    │
+    ├── $APP_NAME
+    │   │
+    │   ├── routers
+    │   │   ├── users.py
+    │   │   ├── messages.py
+    │   │   └── groups.py
+    │   │
+    │   └── utils.py
+    │
+    └── main.py
+
+Here, we are looking to substitute `$APP_NAME` variable's value.
+
+We define the following boilerplate configuration in preptconfig.json::
+
+    {
+        "name": "python-web-app",
+        "template_paths": [
+            "$APP_NAME"
+        ],
+        "template_provider": "stringsub",
+        "template_variables": {
+            "APP_NAME": {
+                "summary": "The name of application."
+            }
+        }
+    }
+
+When we run the :program:`prept new` command, we are prompted to input ``APP_NAME`` and that
+value is substituted into the directory name by string substitution template provider.
+
+With ``prept new python-web-app -V APP_NAME chat-app`` command, the generated project has the
+following structure::
+
+    python-web-app
+    │
+    ├── chat-app
+    │   │
+    │   ├── routers
+    │   │   ├── users.py
+    │   │   ├── messages.py
+    │   │   └── groups.py
+    │   │
+    │   └── utils.py
+    │
+    └── main.py

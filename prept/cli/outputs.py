@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from prept.errors import PreptCLIError
 from typing import Any
 
+import traceback
 import click
 
 __all__ = (
@@ -17,11 +19,15 @@ __all__ = (
 
 def cli_msg(
     prefix: str,
-    message: str,
+    message: str | None = None,
     padding: int = 8,
     prefix_opts: dict[str, Any] | None = None,
     message_opts: dict[str, Any] | None = None,
 ):
+    if message is None:
+        message = prefix
+        prefix = ''
+
     pref = click.style(f'{prefix:<{padding}}', **(prefix_opts or {}))
     msg = click.style(message, **(message_opts or {}))
     return pref + msg
@@ -37,3 +43,11 @@ def echo_info(message: str):
 
 def echo_warning(message: str):
     click.echo(cli_msg('WARNING', message, prefix_opts={'fg': 'yellow'}))
+
+def wrap_exception(
+    exc: Exception,
+    message: str = 'The following error occured and could not be handled:',
+    hint: str | None = None,
+) -> PreptCLIError:
+    message = message + '\n' + ''.join(traceback.format_tb(exc.__traceback__))
+    return PreptCLIError(message)

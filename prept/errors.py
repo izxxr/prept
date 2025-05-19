@@ -44,7 +44,7 @@ class PreptCLIError(PreptError, click.ClickException):
 
         message = outputs.cli_msg('ERROR', message_lines.pop(0), prefix_opts={'fg': 'red'})
         for line in message_lines:
-            message += '\n' + outputs.cli_msg('', line)
+            message += '\n' + outputs.cli_msg(line)
 
         hint_lines = self.hint.splitlines() if self.hint else []
         if not hint_lines:
@@ -52,7 +52,7 @@ class PreptCLIError(PreptError, click.ClickException):
 
         hint = outputs.cli_msg('INFO', hint_lines.pop(0), prefix_opts={'fg': 'blue'})
         for line in hint_lines:
-            hint += '\n' + outputs.cli_msg('', line)
+            hint += '\n' + outputs.cli_msg(line)
 
         return "\n".join((message, hint)).strip()
 

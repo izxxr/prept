@@ -5,7 +5,8 @@ from __future__ import annotations
 from prept import utils
 from prept.cli import outputs
 from prept.cli.params import BOILERPLATE_PATH
-from prept.errors import BoilerplateNotFound, PreptCLIError
+from prept.cli.status import StatusUpdate
+from prept.errors import BoilerplateNotFound
 from prept.boilerplate import BoilerplateInfo
 
 import os
@@ -48,7 +49,7 @@ def install(ctx: click.Context, boilerplate: BoilerplateInfo):
         outputs.echo_info(f'Installed Version: {bp_installed.version or 'N/A'}')
         outputs.echo_info(f'Installing Version: {bp_installed.version or 'N/A'}')
 
-        if not click.confirm(outputs.cli_msg('', 'Proceed and overwrite current installation?')):
+        if not click.confirm(outputs.cli_msg('Proceed and overwrite current installation?')):
             outputs.echo_info('Installation aborted with no changes.')
             return
 
@@ -70,16 +71,12 @@ def install(ctx: click.Context, boilerplate: BoilerplateInfo):
         bp_file = boilerplate.path / file
         target_dir = target / os.path.dirname(file)
 
-        click.echo(outputs.cli_msg('', f'├── Copying \'{boilerplate.path.name / file}\' ... '), nl=False)
-
-        try:
+        with StatusUpdate(
+            message=outputs.cli_msg(f'├── Copying \'{boilerplate.path.name / file}\''),
+            error_message=f'Copying of {bp_file} to at {target / file} failed with following errors:',
+        ):
             os.makedirs(target_dir, exist_ok=True)
             shutil.copy(bp_file, target_dir)
-        except Exception:
-            click.secho('ERROR', fg='red')
-            raise PreptCLIError(f'Failed to copy boilerplate file {bp_file} to installation directory at {target / file}')
-        else:
-            click.secho('DONE', fg='green')
 
     click.echo()
 
