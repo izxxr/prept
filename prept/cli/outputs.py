@@ -46,7 +46,7 @@ def echo_warning(message: str):
 
 def wrap_exception(
     exc: Exception,
-    message: str = 'The following error occured and could not be handled:',
+    message: str = 'The following error occurred and could not be handled:',
     hint: str | None = None,
 ) -> PreptCLIError:
     message = message + '\n' + ''.join(traceback.format_tb(exc.__traceback__))

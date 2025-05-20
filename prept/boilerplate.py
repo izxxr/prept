@@ -9,10 +9,12 @@ from prept.errors import InvalidConfig, ConfigNotFound, BoilerplateNotFound, Pre
 from prept.context import GenerationContext
 from prept.variables import TemplateVariable
 from prept.cli import outputs
+from prept.engine import GenerationEngine
 from prept import utils, providers
 
 import re
 import os
+import sys
 import json
 import click
 import pathspec
@@ -49,7 +51,14 @@ class BoilerplateInfo:
         template_variables: dict[str, dict[str, Any]] | None = None,
         allow_extra_variables: bool = False,
         variable_input_mode: VariableInputModeT = 'all',
+        engine: GenerationEngine | str | None = None,
     ):
+        abspath = str(path.absolute())
+        if abspath not in sys.path:
+            # This is required for using engine that are defined in a module
+            # inside the  boilerplate directory.
+            sys.path.insert(0, abspath)
+
         self._path = path
         self._installed = installed
         self.ignore_paths = ignore_paths or []
@@ -62,6 +71,7 @@ class BoilerplateInfo:
         self.template_paths = template_paths
         self.allow_extra_variables = allow_extra_variables
         self.variable_input_mode = variable_input_mode
+        self.engine = engine
 
         if template_variables is None:
             self.template_variables = {}
@@ -402,6 +412,28 @@ class BoilerplateInfo:
 
         self._variable_input_mode = value
 
+    @property
+    def engine(self) -> GenerationEngine | None:
+        """Generation engine for dynamic generation.
+
+        This takes the engine path in the following format ``module:engine_instance``
+        where ``module`` is name of a Python module that contains engine instance and
+        ``engine_instance`` is name of object from the module that is an instance of
+        :class:`GenerationEngine`.
+        """
+        return self._engine
+
+    @engine.setter
+    def engine(self, value: GenerationEngine | str | None) -> None:
+        if value is None:
+            self._engine = None
+        elif isinstance(value, GenerationEngine):
+            self._engine = value
+        elif isinstance(value, str):
+            self._engine = GenerationEngine._resolve(value)
+        else:
+            raise InvalidConfig('engine', 'engine must be a string Python module spec to a prept.GenerationEngine object')
+
     @classmethod
     def from_path(cls, path: pathlib.Path | str) -> Self:
         """Loads boilerplate information from its path.
@@ -448,6 +480,7 @@ class BoilerplateInfo:
             template_variables=data.get('template_variables'),
             allow_extra_variables=data.get('allow_extra_variables'),
             variable_input_mode=data.get('variable_input_mode', 'all'),
+            engine=data.get('engine'),
         )
     
     @classmethod
@@ -510,6 +543,7 @@ class BoilerplateInfo:
 
         return cls.from_installation(str(value))
 
+    # XXX: Deprecate this method and mark private
     def dump(self) -> dict[str, Any]:
         """Returns the boilerplate in raw data form.
 
@@ -548,6 +582,9 @@ class BoilerplateInfo:
 
         if self.variable_input_mode != 'all':
             data['variable_input_mode'] = self.variable_input_mode
+
+        if self.engine is not None and self.engine._spec:
+            data['engine'] = self.engine._spec
 
         return data
 

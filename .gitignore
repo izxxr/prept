@@ -178,5 +178,6 @@ preptconfig.json
 
 # Misc.
 test.*
+__test_*__.py
 test_proj/
 test_template/

@@ -3,14 +3,11 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, ClassVar
-from types import ModuleType
 from prept.errors import TemplateProviderNotFound, InvalidConfig, PreptCLIError
 
 import string
-import sys
 import pathlib
-import importlib.util
-import importlib.machinery
+import importlib
 
 try:
     import jinja2
@@ -30,20 +27,6 @@ __all__ = (
     'StringTemplateProvider',
     'Jinja2TemplateProvider',
 )
-
-
-def _load_module_from_spec(spec: importlib.machinery.ModuleSpec, mod_name: str) -> ModuleType:
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[mod_name] = module
-    assert spec.loader is not None
-
-    try:
-        spec.loader.exec_module(module)
-    except Exception as e:
-        del sys.modules[mod_name]
-        raise RuntimeError from e  # for wrapping purposes
-    else:
-        return module
 
 
 def get_prept_template_provider(name: str) -> type[TemplateProvider] | None:
@@ -81,15 +64,15 @@ def get_prept_template_provider(name: str) -> type[TemplateProvider] | None:
     return None
 
 
-def resolve_template_provider(name: str) -> type[TemplateProvider]:
+def resolve_template_provider(spec: str) -> type[TemplateProvider]:
     """Resolves a template provider from its name.
 
     The name is given in one the following format:
 
     - ``provider-name``
     - ``provider-class-name``
-    - ``package::provider-name``
-    - ``package::provider-class-name``
+    - ``package:provider-name``
+    - ``package:provider-class-name``
 
     If no ``package`` is provided, it is assumed that a built-in
     template provider from Prept is needed.
@@ -106,7 +89,7 @@ def resolve_template_provider(name: str) -> type[TemplateProvider]:
     type[:class:`TemplateProvider`]
         The resolved template provider.
     """
-    parts = name.split("::")
+    parts = spec.split(":")
     if not parts:
         raise InvalidConfig('template_provider', 'Template provider name cannot be empty')
 
@@ -118,39 +101,34 @@ def resolve_template_provider(name: str) -> type[TemplateProvider]:
         package = package.strip()
         provider_name = provider_name.strip()
     else:
-        raise TemplateProviderNotFound(name, 'too many separators')
+        raise TemplateProviderNotFound(spec, 'too many separators')
 
     if not package:
         package = 'prept.providers'
     if not provider_name:
-        raise TemplateProviderNotFound(name, 'no provider name given')
-
-    spec = importlib.util.find_spec(package)
-    if spec is None:
-        raise TemplateProviderNotFound(name, f'could not find module {package!r}') from None
+        raise TemplateProviderNotFound(spec, 'no provider name given')
 
     try:
-        module = _load_module_from_spec(spec, package.strip())
-    except RuntimeError:
-        raise TemplateProviderNotFound(name, f'could not load module {package!r}') from None
+        module = importlib.import_module(package)
+    except ImportError:
+        raise TemplateProviderNotFound(spec, f'failed to import {package}')
 
-    resolver = getattr(module, 'get_prept_template_provider', None)
-    if resolver is None:
-        provider = getattr(module, provider_name.strip(), None)
-    else:
+    provider = getattr(module, provider_name.strip(), None)
+    if provider is None:
+        resolver = getattr(module, 'get_prept_template_provider', None)
+        if resolver is None:
+            raise TemplateProviderNotFound(spec, 'failed to resolve')
         try:
             provider = resolver(provider_name)
         except Exception as e:
             if isinstance(e, PreptCLIError):
                 raise
-
-            raise TemplateProviderNotFound(name, f'error in resolution: {e}') from None
+            raise TemplateProviderNotFound(spec, f'error in resolution: {e}') from None
 
     if provider is None:
-        raise TemplateProviderNotFound(name, 'failed to resolve')
-
+        raise TemplateProviderNotFound(spec, 'failed to resolve')
     if not getattr(provider, '__prept_template_provider__', False):
-        raise TemplateProviderNotFound(name, f'not a subclass of TemplateProvider; found {provider!r}')
+        raise TemplateProviderNotFound(spec, f'not a subclass of TemplateProvider; found {provider!r}')
 
     return provider
 

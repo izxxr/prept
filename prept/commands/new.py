@@ -105,6 +105,7 @@ def new(
         variables=variables,
     )
     tp = boilerplate.template_provider() if boilerplate.template_provider else None
+    engine = boilerplate.engine
 
     outputs.echo_info(f'Creating project files at \'{output.absolute()}\'')
     click.echo()
@@ -115,6 +116,13 @@ def new(
 
         genctx._set_current_file(file.name, bp_file)
         assert genctx._current_file is not None
+
+        if engine:
+            # If _call_processors() returns false, this means some processor
+            # returned false indicating to stop generation of the current file.
+            if not engine._call_processors(str(file), genctx):
+                click.echo(outputs.cli_msg(f'├── Skipping generation of {file} (processor signal)'))
+                continue
 
         if tp and boilerplate._is_template(file, path=True):
             with StatusUpdate(
