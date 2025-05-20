@@ -14,6 +14,7 @@ by reusing these boilerplates along with the features:
 - Intuitive boilerplate installation and management
 - Flexible template system with support for custom template providers
 - Built-in support for $-substitution and Jinja2 templates
+- Rich Python API for facilitating dynamic generation of boilerplates
 - Extensive customization options to manipulate generation behavior
 
 New to Prept?

@@ -12,3 +12,4 @@ features of Prept.
     quickstart
     boilerplate
     templating
+    dynamic-generation

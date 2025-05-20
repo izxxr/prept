@@ -299,9 +299,14 @@ class BoilerplateInfo:
         - ``jinja2`` based on Jinja templates (requires Jinja2 installed)
 
         This option can take name of third party template providers as well
-        using ``::`` to separate package name and template provider name. For
+        using ``:`` to separate module name and template provider name. For
         example, ``foobar::baz`` means ``baz`` template provider from the ``foobar``
-        package or module.
+        module or package.
+
+        .. versionchanged:: 0.2.0
+
+            This function now takes spec in standard Python module format i.e. ``module_name:object``
+            instead of ``module_name::object``.
         """
         return self._template_provider
     

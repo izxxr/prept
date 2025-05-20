@@ -65,24 +65,29 @@ def get_prept_template_provider(name: str) -> type[TemplateProvider] | None:
 
 
 def resolve_template_provider(spec: str) -> type[TemplateProvider]:
-    """Resolves a template provider from its name.
+    """Resolves a template provider from its spec.
 
-    The name is given in one the following format:
+    The spec is given in one the following format:
 
     - ``provider-name``
     - ``provider-class-name``
-    - ``package:provider-name``
+    - ``module_name:provider-name``
     - ``package:provider-class-name``
 
-    If no ``package`` is provided, it is assumed that a built-in
+    If no ``module_name`` is provided, it is assumed that a built-in
     template provider from Prept is needed.
 
     The ``provider-name`` is the :attr:`TemplateProvider.name` attribute
     of template provider and if provided, the provider is resolved through
-    the :func:`get_prept_template_provider` function defined by the package.
+    the :func:`get_prept_template_provider` function defined by the module_name.
 
     If ``provider-name`` resolution fails, ``provider-class-name`` resolution
     is performed.
+
+    .. versionchanged:: 0.2.0
+
+        This function now takes spec in standard Python module format i.e. ``module_name:object``
+        instead of ``module_name::object``.
 
     Returns
     ~~~~~~~
@@ -94,24 +99,24 @@ def resolve_template_provider(spec: str) -> type[TemplateProvider]:
         raise InvalidConfig('template_provider', 'Template provider name cannot be empty')
 
     if len(parts) == 1:
-        package = 'prept.providers'
+        module_name = 'prept.providers'
         provider_name = parts[0]
     elif len(parts) == 2:
-        package, provider_name = parts
-        package = package.strip()
+        module_name, provider_name = parts
+        module_name = module_name.strip()
         provider_name = provider_name.strip()
     else:
         raise TemplateProviderNotFound(spec, 'too many separators')
 
-    if not package:
-        package = 'prept.providers'
+    if not module_name:
+        module_name = 'prept.providers'
     if not provider_name:
         raise TemplateProviderNotFound(spec, 'no provider name given')
 
     try:
-        module = importlib.import_module(package)
+        module = importlib.import_module(module_name)
     except ImportError:
-        raise TemplateProviderNotFound(spec, f'failed to import {package}')
+        raise TemplateProviderNotFound(spec, f'failed to import {module_name}')
 
     provider = getattr(module, provider_name.strip(), None)
     if provider is None:

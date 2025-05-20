@@ -152,8 +152,8 @@ in either of the following formats:
 
 - ``provider_name``
 - ``provider_class``
-- ``package::provider_name``
-- ``package::provider_class``
+- ``module:provider_name``
+- ``module:provider_class``
 
 ``provider_name`` is the name of template provider such as ``stringsub`` for :class:`StringTemplateProvider`
 and ``provider_class`` is the name of template provider class such as ``StringTemplateProvider``. For example::
@@ -163,8 +163,8 @@ and ``provider_class`` is the name of template provider class such as ``StringTe
         "template_provider": "stringsub"
     }
 
-``package`` is simply the name of a Python package or module. When using third party or custom template providers,
-they must referred by including the package name as well that provides the template provider separating the package
+``module`` is simply the name of a Python package or module. When using third party or custom template providers,
+they must referred by including the module name as well that provides the template provider separating the module
 name and provider name/class with double colon ``::``.
 
 For example::
@@ -305,7 +305,7 @@ variables respectively. ``none`` completely disables variables input prompt.
 
 In each case, the variables that are not taken through input should be provided through :option:`-V <prept new -V>`
 option. Specifically, with ``optional_only`` and ``none`` setting, required variables **must** be provided through
-:option:`-V <prept new V>` otherwise an error is thrown.
+:option:`-V <prept new -V>` otherwise an error is thrown.
 
 .. _guide-templating--template-paths:
 

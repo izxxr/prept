@@ -25,3 +25,6 @@ or manipulation of boilerplates.
 
 .. autoclass:: TemplateProviderNotFound
     :members:
+
+.. autoclass:: EngineNotFound
+    :members:

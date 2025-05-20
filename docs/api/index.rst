@@ -15,4 +15,5 @@ available classes and functions that Prept API provides.
     boilerplate-info
     template-providers
     generation
+    generation-engine
     errors
