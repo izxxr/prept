@@ -130,6 +130,7 @@ def new(
         engine = boilerplate.engine
 
         if engine:
+            outputs.echo_info('Calling the pre-generation hook')
             engine._call_hook(genctx, pre=True)
 
         outputs.echo_info(f'Creating project files at \'{output.absolute()}\'')
@@ -176,6 +177,7 @@ def new(
                     f.write(content)  # type: ignore
 
     if engine:
+        outputs.echo_info('Calling the post-generation hook')
         engine._call_hook(genctx, pre=False)
 
     click.echo()
