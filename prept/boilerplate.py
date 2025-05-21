@@ -15,6 +15,8 @@ from prept import utils, providers
 import re
 import os
 import sys
+import subprocess
+import tempfile
 import json
 import click
 import pathspec
@@ -28,7 +30,25 @@ VariableInputModeT = Literal['all', 'required_only', 'optional_only', 'none']
 
 PATTERN_BOILERPLATE_NAME = re.compile(r'^[A-Za-z_][A-Za-z0-9_-]*$')
 DEFAULT_IGNORED_PATHS = {'preptconfig.json'}
+DEFAULT_INSTALLATION_IGNORED_PATHS = {'.git/*'}
 VARIABLE_INPUT_MODES = set(get_args(VariableInputModeT))
+
+
+def _is_git_installed():
+    try:
+        proc = subprocess.Popen(
+            ['git', '--version'],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        stdout, stderr = proc.communicate()
+    except Exception:
+        return False
+
+    if stderr:
+        return False
+    
+    return stdout.startswith(b'git version')
 
 
 class BoilerplateInfo:
@@ -61,6 +81,7 @@ class BoilerplateInfo:
 
         self._path = path
         self._installed = installed
+        self._from_git = False
         self.ignore_paths = ignore_paths or []
         self.name = name
         self.summary = summary
@@ -89,7 +110,7 @@ class BoilerplateInfo:
             yield pathlib.Path(self.path / file).relative_to(self.path)
 
     def _get_installation_files(self) -> Iterator[pathlib.Path]:
-        spec = pathspec.PathSpec.from_lines('gitwildmatch', [])
+        spec = pathspec.PathSpec.from_lines('gitwildmatch', DEFAULT_INSTALLATION_IGNORED_PATHS)
 
         for file in spec.match_tree(self.path, negate=True):
             yield pathlib.Path(self.path / file).relative_to(self.path)
@@ -515,6 +536,43 @@ class BoilerplateInfo:
         bp._installed = True
 
         return bp
+
+    @classmethod
+    def _clone_from_git(cls, clone_url: str) -> Self:
+        # This method is only intended to be used by the install command and is not exposed
+        # in public API unlike from_path and from_installation because the temporary directory
+        # created for cloning requires a manual cleanup after installation.
+        if not _is_git_installed():
+            raise PreptCLIError('Git must be installed for this operation.')
+
+        outputs.echo_info(f'Cloning git repository from {clone_url}')
+        tempdir_mgr = tempfile.TemporaryDirectory(dir=utils.get_prept_dir('.temp', mk=True), delete=False)
+
+        with tempdir_mgr as clone_dir:
+            proc = subprocess.Popen(
+                ['git', 'clone', clone_url, clone_dir],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            returncode = proc.wait()
+            if returncode:
+                _, stderr = proc.communicate()
+                tempdir_mgr.cleanup()
+                raise PreptCLIError(f'git clone returned non-zero exit code {returncode}, the following error was captured on stderr:\n{stderr.decode()}')
+
+            outputs.echo_info(f'Successfully cloned repository at {clone_dir}, validating boilerplate')
+            clone_path = pathlib.Path(clone_dir)
+
+            try:
+                bp = cls.from_path(clone_path)
+            except Exception:
+                tempdir_mgr.cleanup()
+                raise
+            else:
+                bp._installed = False
+                bp._from_git = True
+
+            return bp
 
     @classmethod
     def resolve(cls, value: Any) -> Self:

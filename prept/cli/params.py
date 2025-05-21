@@ -10,7 +10,7 @@ import click
 
 __all__ = (
     'BOILERPLATE',
-    'BOILERPLATE_PATH',
+    'BOILERPLATE_INSTALLABLE',
     'BOILERPLATE_INSTALLED',
 )
 
@@ -29,21 +29,25 @@ class BoilerplateParamType(click.ParamType):
     """
     name = "boilerplate"
 
-    def __init__(self, *, exclude_installed: bool = False, exclude_path: bool = False) -> None:
-        if exclude_path and exclude_installed:
-            raise TypeError('exclude_path and exclude_installed are mututally exclusive')
-
-        self.exclude_installed = exclude_installed
-        self.exclude_path = exclude_path
+    def __init__(self, *, installed: bool = True, path: bool = True, git: bool = True) -> None:
+        self.installed = installed
+        self.path = path
+        self.git = git
 
     def convert(self, value: Any, param: click.Parameter | None, ctx: click.Context | None) -> BoilerplateInfo:
         if isinstance(value, BoilerplateInfo):
             return value
 
-        if self.exclude_installed:
-            return BoilerplateInfo.from_path(value)
+        if isinstance(value, str) and value.startswith('git+') and self.git:
+            return BoilerplateInfo._clone_from_git(value.lstrip('git+'))
 
-        if self.exclude_path:
+        if self.path:
+            try:
+                return BoilerplateInfo.from_path(value)
+            except Exception:
+                pass
+
+        if self.installed:
             return BoilerplateInfo.from_installation(value)
 
         # resolve() raises InvalidConfig, ConfigNotFound, or BoilerplateNotFound errors
@@ -51,5 +55,5 @@ class BoilerplateParamType(click.ParamType):
         return BoilerplateInfo.resolve(value)
 
 BOILERPLATE = BoilerplateParamType()
-BOILERPLATE_PATH = BoilerplateParamType(exclude_installed=True)
-BOILERPLATE_INSTALLED = BoilerplateParamType(exclude_path=True)
+BOILERPLATE_INSTALLED = BoilerplateParamType(installed=True, path=False)
+BOILERPLATE_INSTALLABLE = BoilerplateParamType(installed=False)

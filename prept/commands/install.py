@@ -2,14 +2,17 @@
 
 from __future__ import annotations
 
+from typing import Any
 from prept import utils
 from prept.cli import outputs
-from prept.cli.params import BOILERPLATE_PATH
+from prept.cli.params import BOILERPLATE_INSTALLABLE
 from prept.cli.status import StatusUpdate
 from prept.errors import BoilerplateNotFound
 from prept.boilerplate import BoilerplateInfo
 
 import os
+import stat
+import errno
 import shutil
 import click
 
@@ -17,26 +20,44 @@ __all__ = (
     'install',
 )
 
+
+# This is adapted from https://stackoverflow.com/a/1214935
+def _handle_rm_read_only(func: Any, path: str, exc: BaseException):
+    if not isinstance(exc, PermissionError):
+        raise
+    if func in (os.rmdir, os.remove, os.unlink) and exc.errno == errno.EACCES:
+        os.chmod(path, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO) # 0777
+        func(path)
+    else:
+        raise
+
+
 @click.command()
 @click.pass_context
 @click.argument(
     'boilerplate',
-    type=BOILERPLATE_PATH,
+    type=BOILERPLATE_INSTALLABLE,
     required=True,
 )
 def install(ctx: click.Context, boilerplate: BoilerplateInfo):
     """Installs a boilerplate globally.
 
-    BOILERPLATE is the path to a valid boilerplate directory (containing
-    preptconfig.json) that is to be installed. If current working directory
-    is the boilerplate template, use prept install . (dot in place of BOILERPLATE)
-
     Global installations allow generation from boilerplates directly using
-    prept new BOILERPLATE using boilerplate name instead of having to pass paths.
+    prept new BOILERPLATE using boilerplate name instead of having to pass
+    paths.
 
-    This command also exists for future proofing as it will be possible
-    to install boilerplates from Git repositories and other third party
-    sources as well.
+    BOILERPLATE can be a path to a valid boilerplate directory (containing
+    preptconfig.json) that is to be installed. If current working directory
+    is the boilerplate template, use the "prept install ." command.
+
+    It is also possible to install boilerplates through Git by passing a
+    repository URL with "git+" suffix. Git must be installed and on PATH
+    for this mode of installation.
+
+    Examples:
+
+    * prept install ./basic-boilerplate                     (install from path)
+    * prept install git+https://github.com/user/repo.git    (install from git)
     """
     overwrite = False
 
@@ -73,7 +94,7 @@ def install(ctx: click.Context, boilerplate: BoilerplateInfo):
 
         with StatusUpdate(
             message=outputs.cli_msg(f'├── Copying \'{boilerplate.path.name / file}\''),
-            error_message=f'Copying of {bp_file} to at {target / file} failed with following errors:',
+            error_message=f'Copying of {bp_file} failed with following error:',
         ):
             os.makedirs(target_dir, exist_ok=True)
             shutil.copy(bp_file, target_dir)
@@ -83,3 +104,16 @@ def install(ctx: click.Context, boilerplate: BoilerplateInfo):
     # \b prevents double spacing if version is not present.
     outputs.echo_success(f'Successfully installed {boilerplate.name} {boilerplate.version or '\b'} boilerplate globally.')
     outputs.echo_info(f'Use \'prept new {boilerplate.name}\' to bootstrap a project from this boilerplate.')
+
+    if boilerplate._from_git:
+        outputs.echo_info('Cleaning up cloned git repository')
+        try:
+            shutil.rmtree(boilerplate.path.absolute(), onexc=_handle_rm_read_only)
+        except Exception as e:
+            raise outputs.wrap_exception(
+                e,
+                'The following error occured in clean up of git repository:',
+                f'Git repository cloned at {boilerplate.path.absolute()} could not be removed. However, boilerplate was installed successfully.'
+            ) from None
+        else:
+            outputs.echo_success('Successfully removed cloned git repository and installed boilerplate')

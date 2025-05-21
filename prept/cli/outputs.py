@@ -49,5 +49,5 @@ def wrap_exception(
     message: str = 'The following error occurred and could not be handled:',
     hint: str | None = None,
 ) -> PreptCLIError:
-    message = message + '\n' + ''.join(traceback.format_tb(exc.__traceback__))
+    message = message + '\n' + ''.join(traceback.format_exception(exc))
     return PreptCLIError(message, hint)
