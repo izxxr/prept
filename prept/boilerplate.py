@@ -546,7 +546,7 @@ class BoilerplateInfo:
             raise PreptCLIError('Git must be installed for this operation.')
 
         outputs.echo_info(f'Cloning git repository from {clone_url}')
-        tempdir_mgr = tempfile.TemporaryDirectory(dir=utils.get_prept_dir('.temp', mk=True), delete=False)
+        tempdir_mgr = tempfile.TemporaryDirectory(dir=utils.get_prept_dir('cloned', mk=True), delete=False)
 
         with tempdir_mgr as clone_dir:
             proc = subprocess.Popen(
