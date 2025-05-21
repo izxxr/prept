@@ -211,3 +211,57 @@ in output directory as well which does not contain this file in ``src`` director
     │   │   └── groups.py
     │
     └── main.py
+
+Hooks
+-----
+
+Hooks are functions that are called at specific points in generation process.
+
+Pre-generation Hook
+~~~~~~~~~~~~~~~~~~~
+
+Pre-generation hook is called before any files are generated and after initialization is done (i.e. variables have
+been processed). This hook is useful in performing any initial setup.
+
+:meth:`GenerationEngine.pre_generation_hook` decorator is used to register pre-generation hook and the decorated
+function takes a single :class:`GenerationContext` instance as parameter::
+
+    engine = prept.GenerationEngine()
+
+    @engine.pre_generation_hook
+    def setup(ctx):
+        print("Call pre-generation hook!")
+
+.. note::
+
+    A few things to note:
+
+    - In pre-generation hook, accessing :attr:`GenerationContext.current_file` property will raise
+      a runtime error as no file is being generated at that point.
+
+    - :attr:`GenerationContext.variables` is guaranteed to be filled in pre-generation hook as this
+      hook is called *after* variables have been processed so it is possible to perform any preprocessing
+      based on variable values.
+
+    - Any :class:`PreptCLIError` error raised in pre-generation hook is formatted and output properly.
+
+Post-generation Hook
+~~~~~~~~~~~~~~~~~~~~
+
+This hook is called when all files have been generated successfully and is useful for clean up purposes.
+
+:meth:`GenerationEngine.post_generation_hook` decorator is used to register post-generation hook and the
+decorated function takes a single :class:`GenerationContext` instance as parameter::
+
+    engine = prept.GenerationEngine()
+
+    @engine.post_generation_hook
+    def cleanup(ctx):
+        print("Generation all done!")
+
+.. note::
+
+    - In post-generation hook, :attr:`GenerationContext.current_file` points to the last file
+      that was generated.
+
+    - Any :class:`PreptCLIError` error raised is formatted and output properly.

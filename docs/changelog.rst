@@ -19,6 +19,7 @@ v0.2.0
 - :meth:`TemplateProvider.render` has been renamed to :meth:`TemplateProvider.process_content`
 - :program:`prept info` now shows the basic details (name, required/optional, summary) of template variables
 - :attr:`~BoilerplateInfo.template_provider` now takes spec in standard Python module format i.e. ``module:object``
+- Output directories created by Prept are now properly cleaned up in case of errors during generation
 
 **Fixes**
 

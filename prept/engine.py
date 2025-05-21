@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Callable, TYPE_CHECKING
+from typing import Callable, Any, TYPE_CHECKING
 from collections import OrderedDict
 from prept.errors import PreptCLIError, EngineNotFound
 from prept.cli import outputs
@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from prept.context import GenerationContext
 
     ProcessorFunctionT = Callable[[GenerationContext], bool | None]
+    GenerationHook = Callable[[GenerationContext], Any]
 
 __all__ = (
     'GenerationEngine',
@@ -29,6 +30,8 @@ class GenerationEngine:
     """
     def __init__(self) -> None:
         self._file_processors: OrderedDict[str, list[ProcessorFunctionT]] = OrderedDict()
+        self._pre_generation_hook: GenerationHook | None = None
+        self._post_generation_hook: GenerationHook | None = None
         self._spec = None
 
     @classmethod
@@ -58,7 +61,7 @@ class GenerationEngine:
         except Exception as e:
             if isinstance(e, PreptCLIError):
                 raise
-            raise outputs.wrap_exception(e, f'In processing of {ctx.current_file.path!r}, the following error occured:') from None
+            raise outputs.wrap_exception(e, f'In processing of {ctx.current_file.path!r}, the following error occured in processor {proc}:') from None
         else:
             # If processor function does not return any value, default it to True.
             return True if result is None else result
@@ -78,6 +81,17 @@ class GenerationEngine:
 
         # Returns boolean indicating whether context file should be generated or not.
         return True
+
+    def _call_hook(self, ctx: GenerationContext, pre: bool = False) -> None:
+        hook = self._pre_generation_hook if pre else self._post_generation_hook
+        if hook is None:
+            return
+        try:
+            hook(ctx)
+        except Exception as e:
+            if isinstance(e, PreptCLIError):
+                raise
+            raise outputs.wrap_exception(e, f'In pre-generation hook {hook}, the following error occured:') from None
 
     def add_processor(self, path: str, proc_func: ProcessorFunctionT) -> None:
         """Registers a processor function for given path.
@@ -148,3 +162,27 @@ class GenerationEngine:
             return func
 
         return __wrapper
+
+    def pre_generation_hook(self, func: GenerationHook) -> GenerationHook:
+        """Decorator to register a pre-generation hook.
+
+        The function decorated by this method will be called when
+        generation starts, before generation of any file.
+        """
+        if not callable(func):
+            raise TypeError('pre-generation hook must be callable')
+
+        self._pre_generation_hook = func
+        return func
+
+    def post_generation_hook(self, func: GenerationHook) -> GenerationHook:
+        """Decorator to register a post-generation hook.
+
+        The function decorated by this method will be called when
+        all files have been generated successfully.
+        """
+        if not callable(func):
+            raise TypeError('post-generation hook must be callable')
+
+        self._post_generation_hook = func
+        return func

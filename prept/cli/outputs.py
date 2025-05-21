@@ -50,4 +50,4 @@ def wrap_exception(
     hint: str | None = None,
 ) -> PreptCLIError:
     message = message + '\n' + ''.join(traceback.format_tb(exc.__traceback__))
-    return PreptCLIError(message)
+    return PreptCLIError(message, hint)
