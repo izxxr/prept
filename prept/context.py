@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Mapping
-from types import MappingProxyType
+from types import MappingProxyType, SimpleNamespace
 from prept.file import BoilerplateFile
 
 import pathlib
@@ -26,6 +26,13 @@ class GenerationContext:
     ~~~~~~~~~~
     output_dir: :class:`pathlib.Path`
         The path to output directory where files are being generated.
+    state:
+        Attribute to store arbitrary data.
+
+        This attribute can take any value and is useful in storing and propagating
+        state across Prept functions. By default, state is initialized with a
+        :class:`types.SimpleNamespace` instance which allows setting arbitrary
+        attributes on the state.
     """
     def __init__(
         self,
@@ -34,6 +41,7 @@ class GenerationContext:
         variables: dict[str, Any] | None = None,
     ):
         self.output_dir = output_dir
+        self.state: Any = SimpleNamespace()
         self._variables = variables or {}
         self._boilerplate = boilerplate
         self._current_file = None
