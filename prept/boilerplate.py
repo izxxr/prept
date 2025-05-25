@@ -66,6 +66,7 @@ class BoilerplateInfo:
         ignore_paths: list[str] | None = None,
         default_generate_directory: str | None = None,
         template_provider: str | None = None,
+        template_provider_options: dict[str, Any] | None = None,
         template_files: list[str] | None = None,
         template_paths: list[str] | None = None,
         template_variables: dict[str, dict[str, Any]] | None = None,
@@ -88,6 +89,7 @@ class BoilerplateInfo:
         self.version = version
         self.default_generate_directory = default_generate_directory
         self.template_provider = template_provider
+        self.template_provider_options = template_provider_options
         self.template_files = template_files
         self.template_paths = template_paths
         self.allow_extra_variables = allow_extra_variables
@@ -345,6 +347,24 @@ class BoilerplateInfo:
             raise InvalidConfig('template_provider', 'Invalid template provider, not a subclass of TemplateProvider')
 
         self._template_provider = value
+
+    @property
+    def template_provider_options(self) -> dict[str, Any]:
+        """The keyword parameters passed to the constructor of template provider.
+
+        This is useful for passing extra metadata to a template provider that
+        can be used to modify its behavior.
+        """
+        return self._template_provider_options
+    
+    @template_provider_options.setter
+    def template_provider_options(self, value: dict[str, Any] | None) -> None:
+        if value is None:
+            value = {}
+        if not isinstance(value, dict):
+            raise InvalidConfig('template_provider_options', 'template_provider_options must be an object with string keys')
+
+        self._template_provider_options = value
 
     @property
     def template_files(self) -> list[str]:

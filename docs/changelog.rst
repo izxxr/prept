@@ -14,6 +14,7 @@ v0.2.0
 - Add support for :ref:`dynamic generation <guide-dynamic-generation>`
 - Add support for installation of boilerplates from git repositories
 - Add :attr:`Context.state` attribute for propagating stateful information
+- Add :attr:`BoilerplateInfo.template_provider_options` for passing additional options to template providers
 
 **Enhancements and Changes**
 

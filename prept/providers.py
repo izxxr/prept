@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 from prept.errors import TemplateProviderNotFound, InvalidConfig, PreptCLIError
 
 import string
@@ -154,6 +154,14 @@ class TemplateProvider:
     - :class:`StringTemplateProvider` for $-substitutions based templating
     - :class:`Jinja2TemplateProvider` for Jinja templates (requires Jinja2 installed)
 
+    Parameters
+    ~~~~~~~~~~
+    **options:
+        The additional options passed to the template provider.
+
+        These options are set through the :attr:`BoilerplateInfo.template_provider_options`
+        setting in preptconfig.json.
+
     Attributes
     ~~~~~~~~~~
     name: :class:`str`
@@ -169,6 +177,9 @@ class TemplateProvider:
     # properly due to separate class objects being created.
     # See this SO question: https://stackoverflow.com/q/11461356
     __prept_template_provider__ = True
+
+    def __init__(self, **options: Any) -> None:
+        pass
 
     def process_path(self, path: pathlib.Path, context: GenerationContext) -> pathlib.Path:
         """"Processes the given path and replaces the.
