@@ -265,3 +265,29 @@ decorated function takes a single :class:`GenerationContext` instance as paramet
       that was generated.
 
     - Any :class:`PreptCLIError` error raised is formatted and output properly.
+
+Maintaining State
+-----------------
+
+Often, it's useful to pass stateful data from one file processor hook to another. Prept passes a :class:`GenerationContext`
+instance to all of the user side functions. This provides a :attr:`~GenerationContext.state` attribute that can take any
+value set by the user.
+
+This is useful in propagating state from one function to another. The following example demonstrates this::
+
+    engine = prept.GenerationEngine()
+
+    @engine.pre_generation_hook
+    def setup(ctx):
+        ctx.state.x = 1
+        ctx.state.y = 2
+
+    @engine.post_generation_hook
+    def cleanup(ctx):
+        # x and y can be accessed here.
+        print('X:', ctx.state.x)
+        print('Y:', ctx.state.y)
+
+By default, :attr:`~GenerationContext.state` is an instance of :class:`types.SimpleNamespace` to allow setting
+arbitrary attributes but it is possible to assign it any other object of your choice.
+

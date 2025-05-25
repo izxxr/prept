@@ -176,9 +176,10 @@ def new(
                 with open(output_file, mode) as f:
                     f.write(content)  # type: ignore
 
+    click.echo()
+
     if engine:
         outputs.echo_info('Calling the post-generation hook')
         engine._call_hook(genctx, pre=False)
 
-    click.echo()
     outputs.echo_success(f'Successfully generated project from {boilerplate.name!r} boilerplate at \'{output.absolute()}\'')
