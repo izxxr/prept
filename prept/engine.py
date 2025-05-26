@@ -29,7 +29,7 @@ class GenerationEngine:
     .. versionadded:: 0.2.0
     """
     def __init__(self) -> None:
-        self._file_processors: OrderedDict[str, list[ProcessorFunctionT]] = OrderedDict()
+        self._file_processors: OrderedDict[str, list[ProcessorFunctionT]] = OrderedDict({})
         self._pre_generation_hook: GenerationHook | None = None
         self._post_generation_hook: GenerationHook | None = None
         self._spec = None

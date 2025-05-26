@@ -521,6 +521,7 @@ class BoilerplateInfo:
             ignore_paths=data.get('ignore_paths'),
             default_generate_directory=data.get('default_generate_directory'),
             template_provider=data.get('template_provider'),
+            template_provider_options=data.get('template_provider_options'),
             template_files=data.get('template_files'),
             template_paths=data.get('template_paths'),
             template_variables=data.get('template_variables'),
@@ -650,6 +651,9 @@ class BoilerplateInfo:
 
         if self._template_provider:
             data['template_provider'] = self._template_provider
+
+        if self._template_provider_options:
+            data['template_provider_options'] = self._template_provider_options
 
         if self._template_files:
             data['template_files'] = self._template_files
