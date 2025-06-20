@@ -159,7 +159,7 @@ class TemplateProvider:
     **options:
         The additional options passed to the template provider.
 
-        These options are set through the :attr:`BoilerplateInfo.template_provider_options`
+        These options are set through the :attr:`BoilerplateInfo.template_provider_params`
         setting in preptconfig.json.
 
     Attributes

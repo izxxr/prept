@@ -126,7 +126,7 @@ def new(
             output=output,
             variables=variables,
         )
-        tp = boilerplate.template_provider(**boilerplate.template_provider_options) if boilerplate.template_provider else None
+        tp = boilerplate.template_provider(**boilerplate.template_provider_params) if boilerplate.template_provider else None
         engine = boilerplate.engine
 
         if engine:
