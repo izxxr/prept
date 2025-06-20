@@ -137,11 +137,7 @@ def new(
         click.echo()
 
         for file in boilerplate._get_generated_files():
-            bp_file = boilerplate.path / file
-            output_file = output / file
-
-            genctx._set_current_file(file.name, bp_file)
-            assert genctx._current_file is not None
+            file_inst = genctx._set_current_file(file.name, boilerplate.path / file, output / file)
 
             if engine:
                 # If _call_processors() returns false, this means some processor
@@ -149,31 +145,33 @@ def new(
                 if not engine._call_processors(str(file), genctx):
                     click.echo(outputs.cli_msg(f'├── Skipping generation of {file} (processor signal)'))
                     continue
-
-            if tp and boilerplate._is_template(file, path=True):
+            
+            if tp and file_inst.process_path_template and boilerplate._is_template(file, path=True):
                 with StatusUpdate(
-                    outputs.cli_msg(f'├── Processing template path {output_file}'),
-                    error_message=f'An error occured while processing template path {output_file}:'
+                    outputs.cli_msg(f'├── Processing template path {file_inst.output_path}'),
+                    error_message=f'An error occured while processing template path {file_inst.output_path}:'
                 ):
-                    output_file = tp.process_path(pathlib.Path(output_file), genctx)
+                    output_path = tp.process_path(file_inst.output_path, genctx)
+            else:
+                output_path = file_inst.output_path
 
             with StatusUpdate(
-                outputs.cli_msg(f'├── Creating {output_file}'),
-                error_message=f'Copying of {bp_file} to installation directory at {output_file} failed with following error:',
+                outputs.cli_msg(f'├── Creating {output_path}'),
+                error_message=f'Copying of {file_inst.path} to installation directory at {output_path} failed with following error:',
             ):
-                os.makedirs(os.path.dirname(output_file), exist_ok=True)
-                shutil.copy2(bp_file, output_file)
+                os.makedirs(os.path.dirname(output_path), exist_ok=True)
+                shutil.copy2(file_inst.path, output_path)
 
-            if boilerplate._is_template(file) and tp is not None:
+            if tp is not None and file_inst.process_content_template and boilerplate._is_template(file):
                 with StatusUpdate(
-                    outputs.cli_msg(f'├── Processing template content {output_file}'),
-                    error_message=f'An error occured while processing template content of {output_file}:'
+                    outputs.cli_msg(f'├── Processing template content {output_path}'),
+                    error_message=f'An error occured while processing template content of {output_path}:'
                 ):
                     content = tp.process_content(genctx.current_file, genctx)
 
                 mode = 'wb' if isinstance(content, bytes) else 'w'
 
-                with open(output_file, mode) as f:
+                with open(output_path, mode) as f:
                     f.write(content)  # type: ignore
 
     click.echo()

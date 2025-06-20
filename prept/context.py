@@ -46,8 +46,14 @@ class GenerationContext:
         self._boilerplate = boilerplate
         self._current_file = None
 
-    def _set_current_file(self, filename: str, path: pathlib.Path) -> None:
-        self._current_file = BoilerplateFile(boilerplate=self.boilerplate, filename=filename, path=path)
+    def _set_current_file(self, filename: str, path: pathlib.Path, output_path: pathlib.Path) -> BoilerplateFile:
+        self._current_file = BoilerplateFile(
+            boilerplate=self.boilerplate,
+            filename=filename,
+            path=path,
+            output_path=output_path,
+        )
+        return self._current_file
 
     @property
     def boilerplate(self) -> BoilerplateInfo:

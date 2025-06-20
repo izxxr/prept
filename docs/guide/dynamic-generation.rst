@@ -212,6 +212,30 @@ in output directory as well which does not contain this file in ``src`` director
     │
     └── main.py
 
+Updating File Properties
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+File processors are useful in dynamically updating a file's properties through the :class:`BoilerplateFile` class
+which is an instance containing useful information about a file being generated. This instance can be accessed
+through the :attr:`Context.current_file` attribute.
+
+Here is an example to demonstrate this::
+
+    import prept
+
+    engine = prept.GenerationEngine()
+
+    @engine.processor('src/utils.py')
+    def process_utils(ctx):
+        if ctx.variables.get('RENAME_UTILS_TO_HELPERS', False):
+            ctx.current_file.filename = 'helpers.py'
+
+In this case, if the ``RENAME_UTILS_TO_HELPERS`` variable is set to true, then ``utils.py`` file name is dynamically
+updated to ``helpers.py``.
+
+There are other properties of :class:`BoilerplateFile` as well that can be changed. For more information, check
+the documentation of :class:`BoilerplateFile` class.
+
 Hooks
 -----
 
