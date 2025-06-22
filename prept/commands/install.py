@@ -2,35 +2,21 @@
 
 from __future__ import annotations
 
-from typing import Any
 from prept import utils
 from prept.cli import outputs
 from prept.cli.params import BOILERPLATE_INSTALLABLE
 from prept.cli.status import StatusUpdate
 from prept.errors import BoilerplateNotFound
 from prept.boilerplate import BoilerplateInfo
+from prept.commands._commons import handle_rm_read_only
 
 import os
-import stat
-import errno
 import shutil
 import click
 
 __all__ = (
     'install',
 )
-
-
-# This is adapted from https://stackoverflow.com/a/1214935
-def _handle_rm_read_only(func: Any, path: str, exc: BaseException):
-    if not isinstance(exc, PermissionError):
-        raise
-    if func in (os.rmdir, os.remove, os.unlink) and exc.errno == errno.EACCES:
-        os.chmod(path, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO) # 0777
-        func(path)
-    else:
-        raise
-
 
 @click.command()
 @click.pass_context
@@ -108,7 +94,7 @@ def install(ctx: click.Context, boilerplate: BoilerplateInfo):
     if boilerplate._from_git:
         outputs.echo_info('Cleaning up cloned git repository')
         try:
-            shutil.rmtree(boilerplate.path.absolute(), onexc=_handle_rm_read_only)
+            shutil.rmtree(boilerplate.path.absolute(), onexc=handle_rm_read_only)
         except Exception as e:
             raise outputs.wrap_exception(
                 e,

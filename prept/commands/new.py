@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 from prept.cli import outputs
 from prept.cli.status import StatusUpdate
 from prept.cli.params import BOILERPLATE
+from prept.commands._commons import handle_rm_read_only
 
 import click
 import shutil
@@ -65,7 +66,7 @@ class _OutputDirectory:
             return
         if self._owned and self.output:
             try:
-                shutil.rmtree(self.output)
+                shutil.rmtree(self.output, onexc=handle_rm_read_only)
             except Exception:
                 # XXX: raise exception here?
                 return

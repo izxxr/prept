@@ -6,6 +6,7 @@ from prept.cli import outputs
 from prept.cli.params import BOILERPLATE_INSTALLED
 from prept.errors import PreptCLIError
 from prept.boilerplate import BoilerplateInfo
+from prept.commands._commons import handle_rm_read_only
 
 import shutil
 import click
@@ -37,7 +38,7 @@ def uninstall(ctx: click.Context, boilerplate: BoilerplateInfo):
 
     outputs.echo_info(f'Removing installation directory from {boilerplate.path.absolute()}')
     try:
-        shutil.rmtree(boilerplate.path)
+        shutil.rmtree(boilerplate.path, onexc=handle_rm_read_only)
     except Exception as e:
         outputs.echo_error('Failed to uninstall the boilerplate. Installation directory could not be removed.')
         click.echo(outputs.cli_msg('The following error occured:'))
