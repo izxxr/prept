@@ -5,7 +5,7 @@ Prept
 CLI tool for managing and generating boilerplates.
 """
 
-__version__ = '0.2.0'
+__version__ = '0.3.0'
 __author__  = 'Izhar Ahmad <izxxr>'
 
 from prept.cli.main import cli as __cli__
