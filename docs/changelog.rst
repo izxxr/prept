@@ -4,6 +4,13 @@
 Changelog
 =========
 
+v0.3.0
+~~~~~~
+
+**Fixes**
+
+- Fix :program:`prept uninstall` and other commands failing due to :class:`PermissionError`
+
 v0.2.0
 ~~~~~~
 
