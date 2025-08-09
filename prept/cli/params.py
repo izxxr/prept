@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Any
 from prept.boilerplate import BoilerplateInfo
+from prept.errors import ConfigNotFound
 
 import click
 
@@ -44,7 +45,7 @@ class BoilerplateParamType(click.ParamType):
         if self.path:
             try:
                 return BoilerplateInfo.from_path(value)
-            except Exception:
+            except ConfigNotFound:
                 pass
 
         if self.installed:

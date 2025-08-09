@@ -96,6 +96,11 @@ class InvalidConfig(PreptCLIError):
         **kwargs: Any,
     ):
         self.key = key
+        if key and args:
+            new_args = list(args)
+            new_args[0] = f'{key!r} in preptconfig.json:' + '\n' + new_args[0]
+            args = tuple(new_args)
+
         super().__init__(*args, **kwargs)
 
 

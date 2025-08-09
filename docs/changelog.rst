@@ -12,6 +12,10 @@ v0.4.0
 - Remove deprecated :meth:`Boilerplate.dump` and :meth:`Boilerplate.save` methods
 - :attr:`Boilerplate.template_provider_params` option is replaced with :ref:`provider settings <guide-templating--template-providers--provider-settings>`
 
+**Enhancements and Changes**
+
+- Key-specific configuration errors now contain the errorenous key in error message
+
 v0.3.0
 ~~~~~~
 

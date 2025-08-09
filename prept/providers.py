@@ -162,6 +162,8 @@ class TemplateProvider:
         The name used to identify the template provider.
     settings:
         Dictionary containing settings for provider from preptconfig.json.
+
+        .. versionadded:: 0.4.0
     """
     name: ClassVar[str]
 
