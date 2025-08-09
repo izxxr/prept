@@ -10,11 +10,12 @@ from prept.context import GenerationContext
 from prept.variables import TemplateVariable
 from prept.cli import outputs
 from prept.engine import GenerationEngine
-from prept import utils, providers
+from prept import utils, providers, _types
 
 import re
 import os
 import sys
+import inspect
 import subprocess
 import tempfile
 import json
@@ -65,8 +66,7 @@ class BoilerplateInfo:
         version: Version | str | None = None,
         ignore_paths: list[str] | None = None,
         default_generate_directory: str | None = None,
-        template_provider: str | None = None,
-        template_provider_params: dict[str, Any] | None = None,
+        template_provider: _types.TemplateProviderConfig = None,
         template_files: list[str] | None = None,
         template_paths: list[str] | None = None,
         template_variables: dict[str, dict[str, Any]] | None = None,
@@ -89,7 +89,6 @@ class BoilerplateInfo:
         self.version = version
         self.default_generate_directory = default_generate_directory
         self.template_provider = template_provider
-        self.template_provider_params = template_provider_params
         self.template_files = template_files
         self.template_paths = template_paths
         self.allow_extra_variables = allow_extra_variables
@@ -123,6 +122,12 @@ class BoilerplateInfo:
     def _is_template(self, file: pathlib.Path, path: bool = False) -> bool:
         spec = pathspec.PathSpec.from_lines('gitwildmatch', self.template_paths if path else self.template_files)
         return spec.match_file(file)
+    
+    def _get_template_provider(self) -> providers.TemplateProvider | None:
+        if self._template_provider is None:
+            return
+        
+        return self._template_provider(settings=self._template_provider_settings)
 
     def _resolve_variables(self, input_vars: list[tuple[str, str]]) -> dict[str, Any]:
         outputs.echo_info('Processing template variables')
@@ -332,39 +337,34 @@ class BoilerplateInfo:
             instead of ``module_name::object``.
         """
         return self._template_provider
-    
+
     @template_provider.setter
-    def template_provider(self, value: type[providers.TemplateProvider] | str | None) -> None:
+    def template_provider(self, value: _types.TemplateProviderConfig | type[providers.TemplateProvider]) -> None:
+        if inspect.isclass(value) and issubclass(value, providers.TemplateProvider):
+            self._template_provider = value
+            self._template_provider_settings = {}
+            return
         if value is None:
             self._template_provider = None
+            self._template_provider_settings = {}
             return
+
         if isinstance(value, str):
-            value = providers.resolve_template_provider(value)
+            provider = providers.resolve_template_provider(value)
+            settings = {}
+        elif isinstance(value, dict):
+            provider = providers.resolve_template_provider(value['name'])
+            settings = value.get('settings', {})
+        else:
+            raise InvalidConfig('template_provider', 'Value must be a string or template provider configuration object')
 
         # See comment in TemplateProvider for explanation of why getattr()
         # is used here instead of issubclass() with TemplateProvider
-        if not getattr(value, '__prept_template_provider__', False):
+        if not getattr(provider, '__prept_template_provider__', False):
             raise InvalidConfig('template_provider', 'Invalid template provider, not a subclass of TemplateProvider')
 
-        self._template_provider = value
-
-    @property
-    def template_provider_params(self) -> dict[str, Any]:
-        """The keyword parameters passed to the constructor of template provider.
-
-        This is useful for passing extra metadata to a template provider that
-        can be used to modify its behavior.
-        """
-        return self._template_provider_params
-    
-    @template_provider_params.setter
-    def template_provider_params(self, value: dict[str, Any] | None) -> None:
-        if value is None:
-            value = {}
-        if not isinstance(value, dict):
-            raise InvalidConfig('template_provider_params', 'template_provider_params must be an object with string keys')
-
-        self._template_provider_params = value
+        self._template_provider = provider
+        self._template_provider_settings = settings
 
     @property
     def template_files(self) -> list[str]:
@@ -521,7 +521,6 @@ class BoilerplateInfo:
             ignore_paths=data.get('ignore_paths'),
             default_generate_directory=data.get('default_generate_directory'),
             template_provider=data.get('template_provider'),
-            template_provider_params=data.get('template_provider_params'),
             template_files=data.get('template_files'),
             template_paths=data.get('template_paths'),
             template_variables=data.get('template_variables'),
@@ -627,59 +626,6 @@ class BoilerplateInfo:
 
         return cls.from_installation(str(value))
 
-    # XXX: Deprecate this method and mark private
-    def dump(self) -> dict[str, Any]:
-        """Returns the boilerplate in raw data form.
-
-        The result is compatible with the preptconfig.json schema.
-        """
-        data: dict[str, Any] = {
-            'name': self._name,
-        }
-
-        if self._summary:
-            data['summary'] = self._summary
-
-        if self._version:
-            data['version'] = self._version
-        
-        if self._ignore_paths:
-            data['ignore_paths'] = self._ignore_paths
-
-        if self._default_generate_directory:
-            data['default_generate_directory'] = self._default_generate_directory
-
-        if self._template_provider:
-            data['template_provider'] = self._template_provider
-
-        if self._template_provider_params:
-            data['template_provider_params'] = self._template_provider_params
-
-        if self._template_files:
-            data['template_files'] = self._template_files
-
-        if self._template_paths:
-            data['template_paths'] = self._template_paths
-
-        if self.template_variables:
-            data['template_variables'] = {v.name: v._dump() for v in self.template_variables.values()}
-
-        if self._allow_extra_variables:
-            data['allow_extra_variables'] = self.allow_extra_variables
-
-        if self.variable_input_mode != 'all':
-            data['variable_input_mode'] = self.variable_input_mode
-
-        if self.engine is not None and self.engine._spec:
-            data['engine'] = self.engine._spec
-
-        return data
-
-    def save(self) -> None:
-        """Saves the boilerplate configuration.
-
-        If configuration is not already present (boilerplate is not initialized), it
-        is saved hence initializing the boilerplate.
-        """
+    def _init_save(self) -> None:
         with open(self.path, 'w') as f:
-            json.dump(self.dump(), f, indent=4)
+            json.dump({'name': self._name}, f, indent=4)

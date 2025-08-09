@@ -4,6 +4,14 @@
 Changelog
 =========
 
+v0.4.0
+~~~~~~
+
+**Breaking Changes**
+
+- Remove deprecated :meth:`Boilerplate.dump` and :meth:`Boilerplate.save` methods
+- :attr:`Boilerplate.template_provider_params` option is replaced with :ref:`provider settings <guide-templating--template-providers--provider-settings>`
+
 v0.3.0
 ~~~~~~
 

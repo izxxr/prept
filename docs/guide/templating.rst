@@ -184,6 +184,29 @@ will resolve to ``simpletemp`` template provider from ``foobar`` package or modu
     More detail on defining custom template providers and this resolver function will be covered
     in a later section.
 
+.. _guide-templating--template-provider--provider-settings:
+
+Provider Settings
+~~~~~~~~~~~~~~~~~
+
+External or third-party template providers may provide options to customize templating behavior. This is faciliated
+by provider settings.
+
+:attr:`~Boilerplate.template_provider` can be set as an object in preptconfig.json containing ``name`` for provider
+name and ``settings`` containing any settings for the provider::
+
+    {
+        "template_provider": {
+            "name": "some_provider_name",
+            "settings": {
+                "key": "value",
+                ...
+            }
+        }
+    }
+
+:attr:`TemplateProvider.settings` attribute can be used to access the settings for template provider.
+
 Template Variables
 ------------------
 

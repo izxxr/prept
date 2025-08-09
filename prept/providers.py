@@ -154,20 +154,14 @@ class TemplateProvider:
     - :class:`StringTemplateProvider` for $-substitutions based templating
     - :class:`Jinja2TemplateProvider` for Jinja templates (requires Jinja2 installed)
 
-    Parameters
-    ~~~~~~~~~~
-    **options:
-        The additional options passed to the template provider.
-
-        These options are set through the :attr:`BoilerplateInfo.template_provider_params`
-        setting in preptconfig.json.
-
     Attributes
     ~~~~~~~~~~
     name: :class:`str`
         Class attribute.
 
         The name used to identify the template provider.
+    settings:
+        Dictionary containing settings for provider from preptconfig.json.
     """
     name: ClassVar[str]
 
@@ -178,8 +172,8 @@ class TemplateProvider:
     # See this SO question: https://stackoverflow.com/q/11461356
     __prept_template_provider__ = True
 
-    def __init__(self, **options: Any) -> None:
-        pass
+    def __init__(self, settings: dict[str, Any]) -> None:
+        self.settings = settings
 
     def process_path(self, path: pathlib.Path, context: GenerationContext) -> pathlib.Path:
         """"Processes the given path and replaces the.
@@ -272,7 +266,10 @@ class Jinja2TemplateProvider(TemplateProvider):
     name = 'jinja2'
 
     def process_path(self, path: pathlib.Path, context: GenerationContext) -> pathlib.Path:
-        assert jinja2 is not None  # this never fails
+        # get_template_provider() checks Jinja installation so this assertion
+        # never fails under normal circumstances. It's here regardless to
+        # satisfy type checker.
+        assert jinja2 is not None
         temp = jinja2.Template(str(path))
 
         return pathlib.Path(temp.render(context.variables))

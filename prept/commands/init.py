@@ -34,7 +34,13 @@ def init(ctx: click.Context, name: str):
         raise PreptCLIError(f'Existing boilerplate configuration found at {path.absolute()}')
 
     bp = BoilerplateInfo(name, path)
-    bp.save()
+    try:
+        bp._init_save()
+    except Exception as exc:
+        raise outputs.wrap_exception(
+            exc,
+            message='The following error occured while saving boilerplate configuration:'
+        ) from None
 
     outputs.echo_success(f'Initialized a boilerplate at \'{path}\'')
     outputs.echo_info(f'Edit boilerplate information in the preptconfig.json file')
