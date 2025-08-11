@@ -23,8 +23,5 @@ or manipulation of boilerplates.
 .. autoclass:: BoilerplateNotFound
     :members:
 
-.. autoclass:: TemplateProviderNotFound
-    :members:
-
-.. autoclass:: EngineNotFound
+.. autoclass:: SpecResolutionError
     :members:

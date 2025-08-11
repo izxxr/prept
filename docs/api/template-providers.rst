@@ -29,14 +29,3 @@ Jinja2TemplateProvider
 
 .. autoclass:: Jinja2TemplateProvider
     :members:
-
-Provider Resolution
--------------------
-
-Prept provides an interface to define custom template providers. This interface also allows third party packages
-and libraries to implement and distribute template providers that can be used directly by installing them and
-referring to them in configuration file.
-
-.. autofunction:: get_prept_template_provider
-
-.. autofunction:: resolve_template_provider

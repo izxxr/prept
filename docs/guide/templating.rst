@@ -135,14 +135,6 @@ template file's content, injecting the variable values into it.
 Typically, variable values are injected into file content by template provider through some templating
 language (like Jinja, as by :class:`Jinja2TemplateProvider`).
 
-Built-in Providers
-~~~~~~~~~~~~~~~~~~
-
-Prept provides two built-in template providers:
-
-- ``stringsub`` (:class:`StringTemplateProvider`) based on $-substitutions
-- ``jinja2`` (:class:`Jinja2TemplateProvider`) based on Jinja templates
-
 Provider Name
 ~~~~~~~~~~~~~
 
@@ -150,39 +142,26 @@ As shown in :ref:`guide-templating--basic-usage--defining-providers`, template p
 using the :attr:`~BoilerplateInfo.template_provider` option. It takes the name of a template provider
 in either of the following formats:
 
-- ``provider_name``
-- ``provider_class``
-- ``module:provider_name``
-- ``module:provider_class``
+- ``provider_name`` (built-in provider)
+- ``module:provider_class`` (third party provider)
 
-``provider_name`` is the name of template provider such as ``stringsub`` for :class:`StringTemplateProvider`
-and ``provider_class`` is the name of template provider class such as ``StringTemplateProvider``. For example::
+``provider_name`` (without any module) refers to provider provided by Prept. In this case,
+``provider_name`` could be either of following built-in providers:
 
-    {
-        "name": "basic-boilerplate",
-        "template_provider": "stringsub"
-    }
+- ``stringsub`` for :class:`StringTemplateProvider`
+- ``jinja2`` for :class:`Jinja2TemplateProvider`
 
-``module`` is simply the name of a Python package or module. When using third party or custom template providers,
-they must referred by including the module name as well that provides the template provider separating the module
-name and provider name/class with double colon ``::``.
+When ``module:provider_class`` is used, provider will be resolved from given Python module. ``provider_class``
+is the name of class in ``module`` subclassed from :class:`TemplateProvider`
 
 For example::
     
     {
         "name": "basic-boilerplate",
-        "template_provider": "foobar::simpletemp"
+        "template_provider": "foobar:SimpleTemplateProvider"
     }
 
-will resolve to ``simpletemp`` template provider from ``foobar`` package or module.
-
-.. note::
-    
-    The provider name or class name is passed to package's :func:`get_prept_template_provider` resolver
-    function which returns the template provider that is called by Prept.
-
-    More detail on defining custom template providers and this resolver function will be covered
-    in a later section.
+will resolve to ``SimpleTemplateProvider`` template provider class from ``foobar`` package or module.
 
 .. _guide-templating--template-provider--provider-settings:
 

@@ -10,7 +10,8 @@ from prept.context import GenerationContext
 from prept.variables import TemplateVariable
 from prept.cli import outputs
 from prept.engine import GenerationEngine
-from prept import utils, providers, _types
+from prept.providers import TemplateProvider
+from prept import utils, _types
 
 import re
 import os
@@ -123,10 +124,10 @@ class BoilerplateInfo:
         spec = pathspec.PathSpec.from_lines('gitwildmatch', self.template_paths if path else self.template_files)
         return spec.match_file(file)
     
-    def _get_template_provider(self) -> providers.TemplateProvider | None:
+    def _get_template_provider(self) -> TemplateProvider | None:
         if self._template_provider is None:
             return
-        
+
         return self._template_provider(settings=self._template_provider_settings)
 
     def _resolve_variables(self, input_vars: list[tuple[str, str]]) -> dict[str, Any]:
@@ -313,7 +314,7 @@ class BoilerplateInfo:
         self._default_generate_directory = value
 
     @property
-    def template_provider(self) -> type[providers.TemplateProvider] | None:
+    def template_provider(self) -> type[TemplateProvider] | None:
         """The name of template provider for this boilerplate, if any.
         
         Template providers act as middleware for processing template
@@ -339,8 +340,8 @@ class BoilerplateInfo:
         return self._template_provider
 
     @template_provider.setter
-    def template_provider(self, value: _types.TemplateProviderConfig | type[providers.TemplateProvider]) -> None:
-        if inspect.isclass(value) and issubclass(value, providers.TemplateProvider):
+    def template_provider(self, value: _types.TemplateProviderConfig | type[TemplateProvider]) -> None:
+        if inspect.isclass(value) and issubclass(value, TemplateProvider):
             self._template_provider = value
             self._template_provider_settings = {}
             return
@@ -350,10 +351,10 @@ class BoilerplateInfo:
             return
 
         if isinstance(value, str):
-            provider = providers.resolve_template_provider(value)
+            provider = TemplateProvider._resolve(value)
             settings = {}
         elif isinstance(value, dict):
-            provider = providers.resolve_template_provider(value['name'])
+            provider = TemplateProvider._resolve(value['name'], 'template_provider.name')
             settings = value.get('settings', {})
         else:
             raise InvalidConfig('template_provider', 'Value must be a string or template provider configuration object')

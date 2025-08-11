@@ -14,8 +14,7 @@ __all__ = (
     'ConfigNotFound',
     'InvalidConfig',
     'BoilerplateNotFound',
-    'TemplateProviderNotFound',
-    'EngineNotFound',
+    'SpecResolutionError',
 )
 
 
@@ -118,15 +117,5 @@ class BoilerplateNotFound(PreptCLIError):
         super().__init__(f'No boilerplate with name {name!r} is installed')
 
 
-class TemplateProviderNotFound(PreptCLIError):
-    """Error raised when template provider is not found, not installed, or has invalid name."""
-
-    def __init__(self, spec: str, reason: str) -> None:
-        super().__init__(f'Failed to resolve template provider from spec {spec!r} ({reason})')
-
-
-class EngineNotFound(PreptCLIError):
-    """Error raised when generation engine could not be found."""
-
-    def __init__(self, spec: str, reason: str) -> None:
-        super().__init__(f'Failed to resolve generation engine from spec {spec!r} ({reason})')
+class SpecResolutionError(InvalidConfig):
+    """Error raised when a module spec format could not be resolved."""

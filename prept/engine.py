@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from typing import Callable, Any, TYPE_CHECKING
 from collections import OrderedDict
-from prept.errors import PreptCLIError, EngineNotFound
+from prept.errors import PreptCLIError, SpecResolutionError
 from prept.cli import outputs
+from prept import utils
 
-import importlib
 import pathspec
 
 if TYPE_CHECKING:
@@ -36,21 +36,10 @@ class GenerationEngine:
 
     @classmethod
     def _resolve(cls, spec: str) -> GenerationEngine:
-        parts = spec.split(':')
-        if len(parts) != 2:
-            raise EngineNotFound(spec, 'invalid spec format')
+        engine = utils.resolve_from_module_spec_format(spec, 'engine')
 
-        mod, obj = parts
-        try:
-            module = importlib.import_module(mod)
-        except ImportError:
-            raise EngineNotFound(spec, f'failed to import {mod}')
-
-        engine = getattr(module, obj, None)
-        if engine is None:
-            raise EngineNotFound(spec, f'{obj} could not be resolved from {mod} module')
         if not isinstance(engine, GenerationEngine):
-            raise EngineNotFound(spec, f'{obj} ({engine}) is not a GenerationEngine instance')
+            raise SpecResolutionError(spec, f'{engine} is not a GenerationEngine instance')
 
         engine._spec = spec
         return engine

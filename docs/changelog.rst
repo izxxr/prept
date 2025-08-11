@@ -11,6 +11,9 @@ v0.4.0
 
 - Remove deprecated :meth:`Boilerplate.dump` and :meth:`Boilerplate.save` methods
 - :attr:`Boilerplate.template_provider_params` option is replaced with :ref:`provider settings <guide-templating--template-providers--provider-settings>`
+- Replace :class:`EngineNotFound` and :class:`TemplateProviderNotFound` with single :class:`SpecResolutionError`
+- Remove :func:`get_prept_template_provider`, :func:`resolve_template_provider`, :attr:`TemplateProvider.name` in favor of
+  using provider class name for external providers
 
 **Enhancements and Changes**
 
